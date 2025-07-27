@@ -1,0 +1,220 @@
+﻿@using UIShared.Abstractions
+@inject IProductAttributeService ProductAttributeService
+@inject ICategoryService CategoryService
+
+<RadzenPanel AllowCollapse="true">
+    <!-- Product Category -->
+    <RadzenPanel AllowCollapse="true">
+        <HeaderTemplate>
+            <div class="accordion-header" @onclick="@(() => ToggleCollapse("categories"))">
+                <span class="header-text">Danh mục</span>
+                <RadzenIcon Icon="@(categoryCollapseVisible ? "expand_less" : "expand_more")" Style="color: var(--rz-white);" />
+            </div>
+        </HeaderTemplate>
+        <ChildContent>
+            <RadzenRadioButtonList @bind-Value="@selectedCategory" TValue="CategoryReadModel" Data="@categories" ValueProperty="Id" TextProperty="Name" Change="@(category => SelectCategory(category))">
+                <Items>
+                    @foreach (var category in categories)
+                    {
+                        <RadzenRadioButtonListItem Value="@category" Text="@category.Name" />
+                    }
+                </Items>
+            </RadzenRadioButtonList>
+        </ChildContent>
+    </RadzenPanel>
+
+    <!-- Price Range Filtering -->
+    <RadzenPanel AllowCollapse="true">
+        <HeaderTemplate>
+            <div class="accordion-header" @onclick="@(() => ToggleCollapse("price"))">
+                <span class="header-text">Giá bán</span>
+                <RadzenIcon Icon="@(priceCollapseVisible ? "expand_less" : "expand_more")" Style="color: var(--rz-white);" />
+            </div>
+        </HeaderTemplate>
+        <ChildContent>
+            @foreach (var priceRange in priceRanges)
+            {
+                <div class="filter-item">
+                    <RadzenCheckBox @bind-Value="@selectedPriceRanges[priceRange]" TValue="bool" Change="@(isChecked => TogglePriceRange(priceRange, isChecked))">
+
+                        @FormatPriceRange(priceRange)
+                    </RadzenCheckBox>
+                </div>
+            }
+        </ChildContent>
+    </RadzenPanel>
+
+    <!-- Product Attributes -->
+    @foreach (var attr in attributes)
+    {
+        <RadzenPanel AllowCollapse="true">
+            <HeaderTemplate>
+                <div class="accordion-header" @onclick="@(() => ToggleCollapse(attr.Id.ToString()))">
+                    <span class="header-text">@attr.Name</span>
+                    <RadzenIcon Icon="@(attributeCollapseVisible[attr.Id] ? "expand_less" : "expand_more")" Style="color: var(--rz-white);" />
+                </div>
+            </HeaderTemplate>
+            <ChildContent>
+                @if (showAttributeValuesDict.TryGetValue(attr.Id, out var attributeValues) && attributeValues != null)
+                {
+                    foreach (var value in attributeValues)
+                    {
+                        <div class="filter-item">
+                            <RadzenCheckBox @bind-Value="@selectedValuesDict[attr.Id][value]" TValue="bool" Change="@(isChecked => ToggleAttrValue(attr, value, isChecked))">
+                                @value.AttributeValue.ToUpper()
+                            </RadzenCheckBox>
+                        </div>
+                    }
+                }
+                @if (attributeValuesDict[attr.Id].Count > 5)
+                {
+                    <RadzenButton Click="@(() => ToggleShowAllValues(attr.Id))" Text="@(showAllValues[attr.Id] ? "Show Less" : "Show More")" ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.Small" />
+                }
+            </ChildContent>
+        </RadzenPanel>
+    }
+
+    <RadzenButton Text="Áp dụng bộ lọc" ButtonStyle="ButtonStyle.Primary" Click="@(() => FilterApplied.InvokeAsync())" Style="width: 100%; margin-top: 1rem;" />
+</RadzenPanel>
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public decimal? MinPrice { get; set; }
+    [Parameter]
+    [EditorRequired]
+    public decimal? MaxPrice { get; set; }
+
+    [Parameter]
+    [EditorRequired]
+    public EventCallback FilterApplied { get; set; }
+
+    [Parameter]
+    public EventCallback<decimal?> MinPriceChanged { get; set; }
+    [Parameter]
+    public EventCallback<decimal?> MaxPriceChanged { get; set; }
+
+    private readonly List<(decimal Min, decimal Max)> priceRanges = new()
+    {
+        (0, 500000),
+        (500000, 1000000),
+        (1000000, 2000000),
+        (2000000, 5000000),
+        (5000000, decimal.MaxValue)
+    };
+    private Dictionary<(decimal Min, decimal Max), bool> selectedPriceRanges = new();
+    private bool priceCollapseVisible = false;
+
+    private Dictionary<Guid, bool> showAllValues = new();
+    private List<ProductAttributeReadModel> attributes = new();
+    private Dictionary<Guid, List<AttributeValueReadModel>> attributeValuesDict = new();
+    private Dictionary<Guid, List<AttributeValueReadModel>> showAttributeValuesDict = new();
+    private Dictionary<Guid, Dictionary<AttributeValueReadModel, bool>> selectedValuesDict = new();
+    private Dictionary<Guid, bool> attributeCollapseVisible = new();
+
+    private List<CategoryReadModel> categories = new();
+    private CategoryReadModel? selectedCategory;
+    private bool categoryCollapseVisible = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Initialize categories
+        var categoriesResponse = await CategoryService.GetCategoriesAsync(new GetCategoriesRequest());
+        if (categoriesResponse.IsSuccess)
+        {
+            categories = categoriesResponse.Value.ToList();
+        }
+
+        // Initialize attributes
+        var response = await ProductAttributeService.GetProductAttributesAsync();
+        if (response.IsSuccess)
+        {
+            attributes = response.Value.ToList();
+            foreach (var attribute in attributes)
+            {
+                var valuesResponse = await ProductAttributeService.GetAttributeValuesAsync(attribute.Id);
+                if (valuesResponse.IsSuccess)
+                {
+                    attributeValuesDict[attribute.Id] = valuesResponse.Value.ToList();
+                    attributeCollapseVisible[attribute.Id] = false;
+                    showAllValues[attribute.Id] = false;
+                    showAttributeValuesDict[attribute.Id] = attributeValuesDict[attribute.Id].Take(5).ToList();
+                    selectedValuesDict[attribute.Id] = new Dictionary<AttributeValueReadModel, bool>();
+                    foreach (var value in attributeValuesDict[attribute.Id])
+                    {
+                        selectedValuesDict[attribute.Id][value] = false;
+                    }
+                }
+            }
+        }
+
+        // Initialize price ranges
+        foreach (var range in priceRanges)
+        {
+            selectedPriceRanges[range] = false;
+        }
+
+        await base.OnInitializedAsync();
+    }
+
+    private void SelectCategory(CategoryReadModel? category)
+    {
+        selectedCategory = category;
+        StateHasChanged();
+    }
+
+    private async Task ToggleAttrValue(ProductAttributeReadModel attr, AttributeValueReadModel value, bool isChecked)
+    {
+        selectedValuesDict[attr.Id][value] = isChecked;
+        await FilterApplied.InvokeAsync();
+        StateHasChanged();
+    }
+
+    private void ToggleShowAllValues(Guid attrId)
+    {
+        showAllValues[attrId] = !showAllValues[attrId];
+        showAttributeValuesDict[attrId] = showAllValues[attrId]
+            ? attributeValuesDict[attrId].ToList()
+            : attributeValuesDict[attrId].Take(5).ToList();
+        StateHasChanged();
+    }
+
+    private async Task TogglePriceRange((decimal Min, decimal Max) priceRange, bool isChecked)
+    {
+        selectedPriceRanges[priceRange] = isChecked;
+        MinPrice = selectedPriceRanges.Any(r => r.Value) ? selectedPriceRanges.Where(r => r.Value).Min(r => r.Key.Min) : null;
+        MaxPrice = selectedPriceRanges.Any(r => r.Value) ? selectedPriceRanges.Where(r => r.Value).Max(r => r.Key.Max) : null;
+
+        await MinPriceChanged.InvokeAsync(MinPrice);
+        await MaxPriceChanged.InvokeAsync(MaxPrice);
+        await FilterApplied.InvokeAsync();
+        StateHasChanged();
+    }
+
+    private string FormatPriceRange((decimal Min, decimal Max) range)
+    {
+        if (range.Max == decimal.MaxValue)
+        {
+            return $"> {range.Min:N0}đ";
+        }
+        return $"{range.Min:N0}đ - {range.Max:N0}đ";
+    }
+
+    private void ToggleCollapse(string section)
+    {
+        if (section == "categories")
+        {
+            categoryCollapseVisible = !categoryCollapseVisible;
+        }
+        else if (section == "price")
+        {
+            priceCollapseVisible = !priceCollapseVisible;
+        }
+        else
+        {
+            var attrId = Guid.Parse(section);
+            attributeCollapseVisible[attrId] = !attributeCollapseVisible[attrId];
+        }
+        StateHasChanged();
+    }
+}

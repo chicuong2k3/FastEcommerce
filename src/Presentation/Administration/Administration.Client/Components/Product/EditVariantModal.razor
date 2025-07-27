@@ -1,0 +1,80 @@
+@inject DialogService DialogService
+<RadzenStack>
+    <RadzenFormField Text="Giá" Variant="Variant.Outlined">
+        <ChildContent>
+            <RadzenNumeric @bind-Value="EditingVariant.BasePrice" Style="width: 100%;" />
+        </ChildContent>
+        <Helper>
+            <RadzenLabel Text="@priceValidationError" Style="color: red;" Visible="@(!string.IsNullOrEmpty(priceValidationError))" />
+        </Helper>
+    </RadzenFormField>
+    @* <RadzenFormField Text="Số lượng" Variant="Variant.Outlined">
+        <ChildContent>
+            <RadzenNumeric @bind-Value="EditingVariant.Quantity" Style="width: 100%;" />
+        </ChildContent>
+        <Helper>
+            <RadzenLabel Text="@quantityValidationError" Style="color: red;" Visible="@(!string.IsNullOrEmpty(quantityValidationError))" />
+        </Helper>
+    </RadzenFormField> *@
+    <RadzenFormField Text="Giá khuyến mãi" Variant="Variant.Outlined">
+        <ChildContent>
+            <RadzenNumeric @bind-Value="EditingVariant.SalePrice" Style="width: 100%;" />
+        </ChildContent>
+        <Helper>
+            <RadzenLabel Text="@salePriceValidationError" Style="color: red;" Visible="@(!string.IsNullOrEmpty(salePriceValidationError))" />
+        </Helper>
+    </RadzenFormField>
+    <RadzenFormField Text="Thời gian bắt đầu khuyến mãi" Variant="Variant.Outlined">
+        <ChildContent>
+            <RadzenDatePicker @bind-Value="EditingVariant.SaleFrom" DateFormat="dd/MM/yyyy" Style="width: 100%;" AllowClear="true" />
+        </ChildContent>
+    </RadzenFormField>
+    <RadzenFormField Text="Thời gian kết thúc khuyến mãi" Variant="Variant.Outlined">
+        <ChildContent>
+            <RadzenDatePicker @bind-Value="EditingVariant.SaleTo" DateFormat="dd/MM/yyyy" Style="width: 100%;" AllowClear="true" />
+        </ChildContent>
+    </RadzenFormField>
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="8px">
+        <RadzenButton Text="Đóng" ButtonStyle="ButtonStyle.Secondary" Size="Radzen.ButtonSize.Medium" Click="(() => DialogService.Close(false))" Variant="Radzen.Variant.Flat" Shade="Radzen.Shade.Default" />
+        <RadzenButton Text="Lưu" ButtonStyle="ButtonStyle.Primary" Size="Radzen.ButtonSize.Medium" Click="Submit" Shade="Radzen.Shade.Default" Variant="Radzen.Variant.Flat" />
+    </RadzenStack>
+</RadzenStack>
+
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public AddVariantRequest EditingVariant { get; set; }
+
+    private string priceValidationError = string.Empty;
+    private string quantityValidationError = string.Empty;
+    private string salePriceValidationError = string.Empty;
+
+    private async Task Submit()
+    {
+        priceValidationError = null;
+        quantityValidationError = null;
+        salePriceValidationError = null;
+
+        bool isValid = true;
+
+        // Validate OriginalPrice
+        if (EditingVariant.BasePrice == null || EditingVariant.BasePrice <= 0)
+        {
+            priceValidationError = "Giá phải là số dương.";
+            isValid = false;
+        }
+
+        // Validate SalePrice (optional, but must be non-negative if provided)
+        if (EditingVariant.SalePrice != null && EditingVariant.SalePrice < 0)
+        {
+            salePriceValidationError = "Giá khuyến mãi không được âm.";
+            isValid = false;
+        }
+
+        if (isValid)
+        {
+            DialogService.Close(true);
+        }
+    }
+}

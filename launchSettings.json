@@ -1,0 +1,18 @@
+{
+  "profiles": {
+    "Docker Compose": {
+      "commandName": "DockerCompose",
+      "commandVersion": "1.0",
+      "serviceActions": {
+        "ecommerce.api": "StartDebugging",
+        "identity": "StartDebugging",
+        "catalog.api": "StartDebugging",
+        "apigateway": "StartDebugging",
+        "inventoryservice.api": "StartDebugging",
+        "ordering.api": "StartDebugging",
+        "identity.api": "StartDebugging",
+        "identityserver": "StartDebugging"
+      }
+    }
+  }
+}

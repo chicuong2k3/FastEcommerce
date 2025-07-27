@@ -1,0 +1,24 @@
+@inject DialogService DialogService
+
+
+
+<RadzenStack>
+    @if (ChildContent != null)
+    {
+        @ChildContent
+    }
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="8px">
+        <RadzenButton Text="Đóng" ButtonStyle="ButtonStyle.Secondary" Size="Radzen.ButtonSize.Medium" Click="@(() => DialogService.Close(false))" Shade="Radzen.Shade.Default" Variant="Radzen.Variant.Flat" />
+        <RadzenButton Text="Xoá" ButtonStyle="ButtonStyle.Primary" Size="Radzen.ButtonSize.Medium" Click="Submit" Variant="Radzen.Variant.Flat" Shade="Radzen.Shade.Default" />
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    private void Submit()
+    {
+        DialogService.Close(true);
+    }
+}

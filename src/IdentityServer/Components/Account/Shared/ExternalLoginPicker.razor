@@ -1,0 +1,57 @@
+﻿@using IdentityServer8.Services
+@using IdentityServer8.Stores
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Identity
+@using IdentityServer.Data
+
+@inject IIdentityServerInteractionService Interaction
+@inject IAuthenticationSchemeProvider SchemeProvider
+@inject IClientStore ClientStore
+
+@if (externalLogins.Count > 0)
+{
+    <form class="form-horizontal" action="Account/PerformExternalLogin" method="post">
+        <div>
+            <AntiforgeryToken />
+            <input type="hidden" name="ReturnUrl" value="@ReturnUrl" />
+            <RadzenStack Gap="4px">
+                @foreach (var provider in externalLogins)
+                {
+                    <RadzenButton Text="@($"Đăng nhập với {provider.DisplayName}")"
+                                  ButtonStyle="ButtonStyle.Secondary"
+                                  Size="ButtonSize.Medium" name="provider" value="@provider.Name"
+                                  Variant="Variant.Flat" Style="width: 100%" />
+                }
+            </RadzenStack>
+        </div>
+    </form>
+}
+
+@code {
+    private List<AuthenticationScheme> externalLogins = [];
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    // protected override Task OnInitializedAsync()
+    // {
+    //     var context = await Interaction.GetAuthorizationContextAsync(ReturnUrl);
+
+    //     var schemes = await SchemeProvider.GetAllSchemesAsync();
+
+    //     externalLogins = schemes
+    //         .Where(x => x.DisplayName != null).ToList();
+
+    //     if (context?.Client.ClientId != null)
+    //     {
+    //         var client = await ClientStore.FindEnabledClientByIdAsync(context.Client.ClientId);
+    //         if (client?.IdentityProviderRestrictions?.Any() == true)
+    //         {
+    //             externalLogins = externalLogins
+    //                 .Where(p => client.IdentityProviderRestrictions.Contains(p.Name))
+    //                 .ToList();
+    //         }
+    //     }
+
+    // }
+}

@@ -1,0 +1,45 @@
+﻿@using System.Linq.Expressions
+@using FluentValidation
+@typeparam TModel
+@typeparam TValue
+
+<RadzenCustomValidator @ref="customValidator"
+                       Component="@fieldIdentifier.FieldName"
+                       Text="@errorMessage"
+                       Validator="@(() => ValidateField())" />
+
+@code {
+    [Parameter, EditorRequired] public Expression<Func<TValue>> For { get; set; }
+    [Parameter, EditorRequired] public TModel Model { get; set; }
+    [Parameter, EditorRequired] public IValidator<TModel> Validator { get; set; }
+
+    private FieldIdentifier fieldIdentifier;
+    private RadzenCustomValidator customValidator;
+    private string errorMessage = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        if (For == null) throw new ArgumentNullException(nameof(For));
+        fieldIdentifier = FieldIdentifier.Create(For);
+    }
+
+    private bool ValidateField()
+    {
+        if (Validator == null || Model == null)
+            return true;
+
+        var result = Validator.Validate(Model);
+        var fieldErrors = result.Errors
+            .Where(x => x.PropertyName == fieldIdentifier.FieldName)
+            .ToList();
+
+        if (fieldErrors.Any())
+        {
+            errorMessage = string.Join("\n", fieldErrors.Select(e => e.ErrorMessage));
+            return false;
+        }
+
+        errorMessage = string.Empty;
+        return true;
+    }
+}

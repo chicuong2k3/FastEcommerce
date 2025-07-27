@@ -1,0 +1,17 @@
+﻿@inject NavigationManager NavigationManager
+
+<span class="text-button-wrapper">
+    <RadzenButton Variant="Variant.Text" Text="@Text" Click="@HandleClick" ButtonStyle="ButtonStyle.Primary" />
+</span>
+
+@code {
+    [Parameter]
+    public string Text { get; set; }
+    [Parameter]
+    public string Path { get; set; }
+
+    private void HandleClick()
+    {
+        NavigationManager.NavigateTo(Path, forceLoad: true);
+    }
+}

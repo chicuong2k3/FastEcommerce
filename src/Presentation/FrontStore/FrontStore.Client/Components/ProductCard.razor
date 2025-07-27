@@ -1,0 +1,49 @@
+
+
+<RadzenCard Variant="Variant.Flat" Style="background: transparent">
+    <RadzenImage Path="@Thumbnail" Style="width: 15rem;" AlternateText="@Product?.Name" />
+
+</RadzenCard>
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public ProductReadModel Product { get; set; } = null!;
+
+    [Parameter]
+    [EditorRequired]
+    public string? Thumbnail { get; set; }
+
+    private ProductVariantReadModel? SelectedVariant { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await SelectDefaultVariantAsync();
+    }
+
+    private async Task SelectDefaultVariantAsync()
+    {
+        await Task.Delay(1);
+        if (Product.Variants?.Count > 0)
+        {
+            // SelectedVariant = (await ProductService.GetProductVariantsAsync(Product.Id, CancellationToken.None))
+            //     .OrderBy(v => !IsSaleActive(v) ? 1 : 0)
+            //     .ThenBy(v => IsSaleActive(v) ? v.SalePrice!.Value : v.OriginalPrice)
+            //     .ThenByDescending(v => v.Quantity)
+            //     .FirstOrDefault();
+        }
+        else
+        {
+            SelectedVariant = null;
+        }
+    }
+
+    private bool IsSaleActive(ProductVariantReadModel? variant)
+    {
+        if (variant?.SalePrice == null) return false;
+        var now = DateTime.UtcNow;
+        return variant.SaleStartDate <= now && (variant.SaleEndDate == null || variant.SaleEndDate >= now);
+    }
+
+    private bool IsSaleActive() => IsSaleActive(SelectedVariant);
+}

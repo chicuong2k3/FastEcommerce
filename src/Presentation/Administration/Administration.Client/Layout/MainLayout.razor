@@ -1,0 +1,35 @@
+@inherits LayoutComponentBase
+
+
+<RadzenComponents @rendermode="InteractiveServer" />
+<RadzenLayout Style="position: relative;grid-template-areas: 'rz-sidebar rz-header' 'rz-sidebar rz-body'">
+    <RadzenHeader>
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0">
+            <RadzenSidebarToggle Click="@(() => sidebarExpanded = !sidebarExpanded)" />
+            <RadzenLabel Text="Header" />
+        </RadzenStack>
+        <LogInOrOut />
+    </RadzenHeader>
+    <RadzenSidebar Responsive="false" @bind-Expanded="@sidebarExpanded">
+        <RadzenPanelMenu>
+            <RadzenPanelMenuItem Text="BẢNG ĐIỀU KHIỂN" Icon="signal_cellular_alt" />
+            <RadzenPanelMenuItem Text="QUẢN LÝ CATALOG" Icon="inventory_2">
+                <RadzenPanelMenuItem Text="QUẢN LÝ SẢN PHẨM" Path="products" Icon="deployed_code" />
+                <RadzenPanelMenuItem Text="QUẢN LÝ DANH MỤC" Path="categories" Icon="category" />
+                <RadzenPanelMenuItem Text="QUẢN LÝ THUỘC TÍNH" Path="product-attributes" Icon="style" />
+
+            </RadzenPanelMenuItem>
+            <RadzenPanelMenuItem Text="QUẢN LÝ HÀNG TỒN KHO" Icon="inventory_2">
+                <RadzenPanelMenuItem Text="QUẢN LÝ STOCK" Path="stocks" Icon="deployed_code" />
+                <RadzenPanelMenuItem Text="QUẢN LÝ KHO HÀNG" Path="warehouses" Icon="deployed_code" />
+            </RadzenPanelMenuItem>
+        </RadzenPanelMenu>
+    </RadzenSidebar>
+    <RadzenBody>
+        @Body
+    </RadzenBody>
+</RadzenLayout>
+
+@code {
+    private bool sidebarExpanded = true;
+}

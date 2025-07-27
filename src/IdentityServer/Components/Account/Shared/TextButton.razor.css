@@ -1,0 +1,21 @@
+.text-button-wrapper ::deep .rz-button {
+    padding: 0;
+    min-width: 0;
+    min-height: 0;
+    background-color: none !important;
+}
+
+    .text-button-wrapper ::deep .rz-button:hover {
+        background: none !important;
+        color: var(--rz-link-hover-color) !important;
+    }
+
+.text-button-wrapper ::deep .rz-button {
+    background: none !important;
+    color: var(--rz-link-color) !important;
+}
+
+.text-button-wrapper ::deep .rz-button-text:hover {
+    text-decoration: underline;
+    background-color: none;
+}

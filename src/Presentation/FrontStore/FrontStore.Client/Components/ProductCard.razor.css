@@ -1,0 +1,36 @@
+
+
+::deep .product-card {
+    border: none;
+    overflow: hidden;
+    box-shadow: none;
+    transition: transform all 0.3s ease-in-out;
+}
+
+    ::deep .product-card:hover {
+        transform: scale(1.02);
+    }
+
+.sale-badge {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+}
+
+.out-of-stock-badge {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+}
+
+.product-name ::deep a {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.price-currency {
+    display: inline-block;
+    transform: translateY(-2px);
+}

@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\Shared.Application\Shared.Application.csproj" />
+    <ProjectReference Include="..\..\Catalog\Catalog.Contracts\Catalog.Contracts.csproj" />
+    <ProjectReference Include="..\..\InventoryService\InventoryService.Contracts\InventoryService.Contracts.csproj" />
+    <ProjectReference Include="..\Ordering.Contracts\Ordering.Contracts.csproj" />
+    <ProjectReference Include="..\Ordering.Core\Ordering.Core.csproj" />
+    <ProjectReference Include="..\Ordering.ReadModels\Ordering.ReadModels.csproj" />
+    <ProjectReference Include="..\Ordering.Requests\Ordering.Requests.csproj" />
+  </ItemGroup>
+
+</Project>
