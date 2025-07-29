@@ -1,6 +1,7 @@
 using Administration.Auth;
 using Administration.Client.Extensions;
 using Administration.Components;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -40,6 +41,12 @@ builder.Services.AddAuthentication(options =>
         options.Scope.Add(OpenIdConnectScope.OpenId);
         options.Scope.Add(OpenIdConnectScope.OpenIdProfile);
         //options.Scope.Add(OpenIdConnectScope.OfflineAccess);
+        options.Scope.Add("roles");
+        options.ClaimActions.MapUniqueJsonKey("roles", "roles");
+        options.TokenValidationParameters = new()
+        {
+            RoleClaimType = "role"
+        };
 
         options.GetClaimsFromUserInfoEndpoint = true;
         options.SaveTokens = true;
@@ -69,6 +76,9 @@ app.UseHttpsRedirection();
 
 app.UseStaticFiles();
 app.UseAntiforgery();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapRazorComponents<App>()
     .AddInteractiveWebAssemblyRenderMode()

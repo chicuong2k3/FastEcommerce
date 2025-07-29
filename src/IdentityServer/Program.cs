@@ -2,6 +2,7 @@ using FluentValidation;
 using IdentityServer;
 using IdentityServer.Components;
 using IdentityServer.Components.Account;
+using IdentityServer.Configs;
 using IdentityServer.Data;
 using IdentityServer.Services;
 using IdentityServer8;
@@ -9,9 +10,12 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Facebook;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Builder.Extensions;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using Radzen;
 using Serilog;
@@ -98,7 +102,6 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 
 
 builder.Services.AddCascadingAuthenticationState();
-builder.Services.AddScoped<IdentityUserAccessor>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
 
 builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection(nameof(EmailOptions)));
@@ -117,7 +120,9 @@ builder.Services.AddIdentityServer(options =>
         .AddDeveloperSigningCredential()
         .AddInMemoryIdentityResources(Config.IdentityResources)
         .AddInMemoryApiScopes(Config.ApiScopes)
+        .AddInMemoryApiResources(Config.ApiResources)
         .AddInMemoryClients(Config.Clients);
+
 
 builder.Services.AddAuthentication(options =>
 {
@@ -126,16 +131,20 @@ builder.Services.AddAuthentication(options =>
 })
     .AddGoogle(GoogleDefaults.AuthenticationScheme, options =>
     {
-        options.SignInScheme = IdentityServerConstants.ExternalCookieAuthenticationScheme;
+        var googleOptions = builder.Configuration.GetSection("Authentication:Google").Get<GoogleAuthOptions>()
+                                ?? throw new ArgumentNullException("Authentication:Google is missing.");
+        options.SignInScheme = IdentityConstants.ExternalScheme;
 
-        options.ClientId = "122";
-        options.ClientSecret = "12331";
+        options.ClientId = googleOptions.ClientId;
+        options.ClientSecret = googleOptions.ClientSecret;
     })
     .AddFacebook(FacebookDefaults.AuthenticationScheme, options =>
     {
-        options.SignInScheme = IdentityServerConstants.ExternalCookieAuthenticationScheme;
-        options.AppId = "123";
-        options.AppSecret = "123";
+        var facebookOptions = builder.Configuration.GetSection("Authentication:Facebook").Get<FacebookAuthOptions>()
+                                    ?? throw new ArgumentNullException("Authentication:Facebook is missing.");
+        options.SignInScheme = IdentityConstants.ExternalScheme;
+        options.AppId = facebookOptions.AppId;
+        options.AppSecret = facebookOptions.AppSecret;
         options.Scope.Add("email");
         options.Scope.Add("public_profile");
         options.ClaimActions.MapJsonKey("picture", "picture");

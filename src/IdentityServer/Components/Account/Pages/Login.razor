@@ -106,17 +106,12 @@
     [SupplyParameterFromQuery]
     public string ConfirmEmailMessage { get; set; }
 
-    private string? CsrfToken;
-
     protected override void OnInitialized()
     {
         if (!string.IsNullOrEmpty(ConfirmEmailMessage))
         {
             NotifService.Success(ConfirmEmailMessage);
         }
-
-        //var tokens = Antiforgery.GetAndStoreTokens(HttpContext);
-        //CsrfToken = tokens.RequestToken;
     }
 
     private async Task HandleLogin()
@@ -148,8 +143,8 @@
 
     public class LoginInputModel
     {
-        public string Email { get; set; }
-        public string Password { get; set; }
+        public string Email { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
         public bool RememberMe { get; set; }
     }
 

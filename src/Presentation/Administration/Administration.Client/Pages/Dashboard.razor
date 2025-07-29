@@ -1,5 +1,26 @@
 ﻿@page "/"
+@using Microsoft.AspNetCore.Authorization
+@using System.Security.Claims
+
+@attribute [Authorize]
+
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+@foreach (var claim in claims)
+{
+    <div>@claim.Type: @claim.Value</div>
+}
+
 
 @code {
+    private AuthenticationState authenticationState;
 
+    private List<Claim> claims = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        authenticationState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+
+        claims = authenticationState.User.Claims.ToList();
+    }
 }
