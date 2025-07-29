@@ -23,6 +23,14 @@
                     </RadzenAlert>
                 }
 
+                @if (ConfirmEmailMessage != null)
+                {
+                    <RadzenAlert AlertStyle="AlertStyle.Success" Variant="Variant.Flat" Shade="Shade.Lighter" AllowClose="false">
+                        @ConfirmEmailMessage
+                    </RadzenAlert>
+                }
+
+
                 <RadzenTemplateForm TItem="RegisterInputModel" Data="@Input" Submit="RegisterUser">
                     <RadzenStack Gap="12px">
                         <RadzenFormField Text="Email" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%;">
@@ -69,12 +77,17 @@
                 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.Center">
                     <RadzenText TextStyle="TextStyle.Subtitle2">
                         Đã có tài khoản?
-                        <TextButton Text="Tạo tài khoản" Path="@($"/Account/Login?ReturnUrl={Uri.EscapeDataString(ReturnUrl ?? "/")}")" />
+                        <TextButton Text="Đăng nhập" Path="@($"/Account/Login?ReturnUrl={Uri.EscapeDataString(ReturnUrl ?? "/")}")" />
                     </RadzenText>
                 </RadzenStack>
+
+                <Divider Text="Đăng nhập với" />
+
+                <ExternalLoginPicker />
             </RadzenStack>
 
-            <ExternalLoginPicker />
+
+
         </RadzenCard>
     </RadzenColumn>
 </RadzenRow>
@@ -88,15 +101,17 @@
     [SupplyParameterFromQuery]
     public string? ReturnUrl { get; set; }
 
-    private string? errorMessage => identityErrors is null ? null : identityErrors.Select(error => error.Description).FirstOrDefault();
+    private RenderFragment? ConfirmEmailMessage;
 
-    private string confirmEmailMessage = string.Empty;
+    private string? errorMessage => identityErrors is null ? null : identityErrors.Select(error => error.Description).FirstOrDefault();
 
     private bool isSubmitting = false;
 
     public async Task RegisterUser()
     {
         isSubmitting = true;
+
+        ConfirmEmailMessage = null;
 
         var user = new ApplicationUser()
         {
@@ -127,17 +142,56 @@
                 NavigationManager.ToAbsoluteUri("Account/ConfirmEmail").AbsoluteUri,
                 new Dictionary<string, object?> { ["userId"] = userId, ["code"] = code, ["returnUrl"] = ReturnUrl });
 
-            var confirmationLink = HtmlEncoder.Default.Encode(callbackUrl);
-            var confirmationContent = $"<a href='{confirmationLink}'></a>";
-            await EmailService.SendEmailAsync(user.UserName, user.Email, "Xác nhận tài khoản", confirmationContent);
+            var content = $"<a href='{callbackUrl}'>Xác nhận email</a>";
+            var success = await EmailService.SendEmailAsync(user.UserName!, user.Email!, "Xác nhận tài khoản", content);
 
-            confirmEmailMessage = "Email xác thực đã được gửi đến bạn!";
+            if (!success)
+            {
+                NotifService.Error("Có lỗi xảy ra. Vui lòng thử lại sau!");
+                return;
+            }
+
+            ConfirmEmailMessage =@<span>
+                Email xác thực đã được gửi đến bạn!
+                <TextButton Text="Nhấn vào đây để gửi lại email xác thực." OnClick="@ResendEmailConfirmation"></TextButton>
+            </span>
+            ;
         }
 
-        NavigationManager.NavigateTo(NavigationManager.GetUriWithQueryParameters(
-                NavigationManager.ToAbsoluteUri("Account/Login").AbsoluteUri,
-                new Dictionary<string, object?> { ["returnUrl"] = ReturnUrl, ["confirmEmailMessage"] = confirmEmailMessage }), forceLoad: true);
+    }
 
+    private async Task ResendEmailConfirmation()
+    {
+        ConfirmEmailMessage =@<span>
+            Đang gửi lại email xác thực...
+        </span>;
+
+        var user = await UserManager.FindByEmailAsync(Input.Email!);
+        if (user is null)
+        {
+            return;
+        }
+
+        var userId = await UserManager.GetUserIdAsync(user);
+        var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
+        code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+        var callbackUrl = NavigationManager.GetUriWithQueryParameters(
+            NavigationManager.ToAbsoluteUri("Account/ConfirmEmail").AbsoluteUri,
+            new Dictionary<string, object?> { ["userId"] = userId, ["code"] = code, ["returnUrl"] = ReturnUrl });
+
+        var content = $"<a href='{callbackUrl}'>Xác nhận email</a>";
+        var success = await EmailService.SendEmailAsync(user.UserName!, user.Email!, "Xác nhận tài khoản", content);
+
+        if (!success)
+        {
+            NotifService.Error("Có lỗi xảy ra. Vui lòng thử lại sau!");
+            return;
+        }
+
+        ConfirmEmailMessage =@<span>
+            Email xác thực đã được gửi đến bạn!
+            <TextButton Text="Nhấn vào đây để gửi lại email xác thực." OnClick="@ResendEmailConfirmation"></TextButton>
+        </span>;
     }
 
     public sealed class RegisterInputModel

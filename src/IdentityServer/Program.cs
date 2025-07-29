@@ -8,15 +8,15 @@ using IdentityServer8;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Facebook;
 using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
+using Microsoft.OpenApi.Models;
 using Radzen;
 using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.SystemConsole.Themes;
-using System.Runtime;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,6 +31,38 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 
 builder.Services.AddRazorPages();
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.AddSecurityDefinition("CookieAuth", new OpenApiSecurityScheme
+    {
+        Name = ".AspNetCore.MyCookieScheme",
+        Type = SecuritySchemeType.ApiKey,
+        In = ParameterLocation.Cookie,
+        Description = "Cookie-based authentication",
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Id = "CookieAuth",
+                    Type = ReferenceType.SecurityScheme
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
+
+builder.Services.AddHttpClient("IdentityServerClient", options =>
+{
+    options.BaseAddress = new Uri("https://localhost:5001");
+});
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents(options =>
@@ -67,12 +99,10 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityUserAccessor>();
-builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
 
 builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection(nameof(EmailOptions)));
 builder.Services.AddScoped<IEmailService, EmailService>();
-builder.Services.AddScoped<ILoginTokenStore, EfLoginTokenStore>();
 
 
 builder.Services.AddIdentityServer(options =>
@@ -121,6 +151,13 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Identity Server API V1");
+    c.ConfigObject.AdditionalItems["withCredentials"] = true;
+});
+
 app.UseHttpsRedirection();
 
 
@@ -140,6 +177,7 @@ app.MapRazorComponents<App>()
 app.MapAdditionalIdentityEndpoints();
 
 app.MapRazorPages();
+app.MapControllers();
 
 app.Run();
 

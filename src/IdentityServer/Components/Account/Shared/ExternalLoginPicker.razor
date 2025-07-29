@@ -7,51 +7,53 @@
 @inject IIdentityServerInteractionService Interaction
 @inject IAuthenticationSchemeProvider SchemeProvider
 @inject IClientStore ClientStore
+@inject NavigationManager NavigationManager
+@inject IHttpClientFactory HttpClientFactory
 
 @if (externalLogins.Count > 0)
 {
-    <form class="form-horizontal" action="Account/PerformExternalLogin" method="post">
-        <div>
-            <AntiforgeryToken />
-            <input type="hidden" name="ReturnUrl" value="@ReturnUrl" />
-            <RadzenStack Gap="4px">
-                @foreach (var provider in externalLogins)
-                {
-                    <RadzenButton Text="@($"Đăng nhập với {provider.DisplayName}")"
-                                  ButtonStyle="ButtonStyle.Secondary"
-                                  Size="ButtonSize.Medium" name="provider" value="@provider.Name"
-                                  Variant="Variant.Flat" Style="width: 100%" />
-                }
-            </RadzenStack>
-        </div>
-    </form>
+
+    <RadzenStack Gap="4px">
+        @foreach (var provider in externalLogins)
+        {
+            <RadzenButton Text="@($"Đăng nhập với {provider.DisplayName}")"
+                          ButtonStyle="ButtonStyle.Secondary"
+                          Size="ButtonSize.Medium"
+                          Variant="Variant.Flat" Style="width: 100%"
+                          Click="@(() => ExternalLogin(provider.Name))" />
+        }
+    </RadzenStack>
 }
 
 @code {
-    private List<AuthenticationScheme> externalLogins = [];
+    private List<ExternalLoginProvider> externalLogins = [];
 
+    [Parameter]
     [SupplyParameterFromQuery]
-    private string? ReturnUrl { get; set; }
+    public string? ReturnUrl { get; set; }
 
-    // protected override Task OnInitializedAsync()
-    // {
-    //     var context = await Interaction.GetAuthorizationContextAsync(ReturnUrl);
+    protected override async Task OnInitializedAsync()
+    {
+        var httpClient = HttpClientFactory.CreateClient("IdentityServerClient");
+        var result = await httpClient.GetFromJsonAsync<List<ExternalLoginProvider>>($"/api/externallogins?returnUrl={Uri.EscapeDataString(ReturnUrl ?? "/")}");
+        externalLogins = result ?? [];
 
-    //     var schemes = await SchemeProvider.GetAllSchemesAsync();
+    }
 
-    //     externalLogins = schemes
-    //         .Where(x => x.DisplayName != null).ToList();
+    private void ExternalLogin(string provider)
+    {
+        NavigationManager.NavigateTo(NavigationManager.GetUriWithQueryParameters(
+            NavigationManager.ToAbsoluteUri("Account/PerformExternalLogin").AbsoluteUri,
+                new Dictionary<string, object?>()
+                {
+                    ["provider"] = provider,
+                    ["returnUrl"] = ReturnUrl
+                }), forceLoad: true);
+    }
 
-    //     if (context?.Client.ClientId != null)
-    //     {
-    //         var client = await ClientStore.FindEnabledClientByIdAsync(context.Client.ClientId);
-    //         if (client?.IdentityProviderRestrictions?.Any() == true)
-    //         {
-    //             externalLogins = externalLogins
-    //                 .Where(p => client.IdentityProviderRestrictions.Contains(p.Name))
-    //                 .ToList();
-    //         }
-    //     }
-
-    // }
+    public class ExternalLoginProvider
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? DisplayName { get; set; }
+    }
 }

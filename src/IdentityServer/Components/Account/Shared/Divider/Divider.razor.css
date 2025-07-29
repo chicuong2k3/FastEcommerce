@@ -1,0 +1,67 @@
+.rz-divider-wrapper {
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.rz-divider-single .rz-divider-line {
+    width: 100%;
+}
+
+.rz-divider-with-text .rz-divider-line {
+    flex: 1;
+}
+
+.rz-divider-line {
+    border-bottom-style: solid;
+    border-bottom-color: var(--rz-base);
+}
+
+
+.rz-solid {
+    border-bottom-style: solid;
+}
+
+.rz-dashed {
+    border-bottom-style: dashed;
+}
+
+.rz-dotted {
+    border-bottom-style: dotted;
+}
+
+.rz-base {
+    border-bottom-color: var(--rz-base);
+}
+
+.rz-primary {
+    border-bottom-color: var(--rz-primary);
+}
+
+.rz-secondary {
+    border-bottom-color: var(--rz-secondary);
+}
+
+.rz-success {
+    border-bottom-color: var(--rz-success);
+}
+
+.rz-info {
+    border-bottom-color: var(--rz-info);
+}
+
+.rz-warning {
+    border-bottom-color: var(--rz-warning);
+}
+
+.rz-danger {
+    border-bottom-color: var(--rz-danger);
+}
+
+.rz-dark {
+    border-bottom-color: var(--rz-dark);
+}
+
+.rz-light {
+    border-bottom-color: var(--rz-light);
+}

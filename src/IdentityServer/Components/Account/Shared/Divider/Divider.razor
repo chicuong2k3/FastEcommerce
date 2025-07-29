@@ -1,0 +1,41 @@
+﻿<div class="@BuildWrapperClass()" style="@($"gap: {Gap}")">
+    <div class="@BuildLineClass()" style="@BuildLineStyle()"></div>
+
+    @if (!string.IsNullOrWhiteSpace(Text))
+    {
+        <RadzenText TextStyle="TextStyle.Subtitle2" Style="padding: 0; margin: 0">@Text</RadzenText>
+        <div class="@BuildLineClass()" style="@BuildLineStyle()"></div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public DividerType DividerType { get; set; } = DividerType.Solid;
+
+    [Parameter]
+    public DividerStyle DividerStyle { get; set; } = DividerStyle.Base;
+
+    [Parameter]
+    public string Height { get; set; } = "1px";
+
+    [Parameter]
+    public string? Text { get; set; }
+
+    [Parameter]
+    public string? Style { get; set; }
+
+    [Parameter]
+    public string Gap { get; set; } = "8px";
+
+    private string BuildWrapperClass() =>
+        $"rz-divider-wrapper {(string.IsNullOrWhiteSpace(Text) ? "rz-divider-single" : "rz-divider-with-text")}";
+
+    private string BuildLineClass() =>
+        $"rz-divider-line rz-{DividerType.ToString().ToLower()} rz-{DividerStyle.ToString().ToLower()}";
+
+    private string BuildLineStyle() =>
+        $"border-width: {Height};" + (string.IsNullOrEmpty(Style) ? "" : Style);
+
+    private string BuildTextClass() =>
+        $"rz-divider-text rz-{DividerStyle.ToString().ToLower()}";
+}
