@@ -35,7 +35,8 @@ public class CheckoutStateMachine : MassTransitStateMachine<CheckoutSagaState>
 
         Initially(When(OrderCreated).Publish(context => new OrderCreatedIntegrationEvent(
             context.Message.OrderId,
-            context.Message.CustomerId)));
+            context.Message.CustomerId,
+            context.Message.TotalAmount)));
     }
 
 }

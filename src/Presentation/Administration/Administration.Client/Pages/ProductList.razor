@@ -136,19 +136,19 @@
 
     private async Task LoadCategoriesAsync()
     {
-        var response = await CategoryService.GetCategoriesAsync(new GetCategoriesRequest());
-        if (response.IsSuccess)
+        var response = await CategoryService.GetCategoriesAsync(null);
+        if (response.ResponseMessage.IsSuccessStatusCode)
         {
-            categories = response.Value.ToList();
+            categories = response.GetContent().ToList();
         }
     }
 
     private async Task LoadAttributesAsync()
     {
         var response = await ProductAttributeService.GetProductAttributesAsync();
-        if (response.IsSuccess)
+        if (response.ResponseMessage.IsSuccessStatusCode)
         {
-            attributes = response.Value.ToList();
+            attributes = response.GetContent().ToList();
         }
     }
 
@@ -160,12 +160,12 @@
         filter.PageNumber = currentPage;
         filter.PageSize = pageSize;
 
-        var response = await ProductService.GetProductsAsync(filter);
-        if (response.IsSuccess)
+        var response = await ProductService.GetProductsAsync(filter.PageNumber, filter.PageSize, filter.CategoryId, filter.SearchText, filter.SortBy, filter.MinPrice, filter.MaxPrice);
+        if (response.ResponseMessage.IsSuccessStatusCode)
         {
-            products = response.Value.Data.ToList();
-            TotalPages = response.Value.TotalPages;
-            TotalItems = response.Value.TotalRecords;
+            products = response.GetContent().Data.ToList();
+            TotalPages = response.GetContent().TotalPages;
+            TotalItems = response.GetContent().TotalRecords;
         }
         await InvokeAsync(StateHasChanged);
     }
@@ -209,7 +209,7 @@
     private async Task HandleDelete()
     {
         var response = await ProductService.DeleteProductAsync(selectedForDeleteProduct.Id);
-        if (response.IsSuccess)
+        if (response.ResponseMessage.IsSuccessStatusCode)
         {
             NotificationService.Notify(new NotificationMessage
             {
@@ -289,7 +289,7 @@
     private async Task HandleEdit()
     {
         var response = await ProductService.UpdateProductAsync(selectedProductId, Product);
-        if (response.IsSuccess)
+        if (response.ResponseMessage.IsSuccessStatusCode)
         {
             NotificationService.Notify(new NotificationMessage
             {
@@ -313,7 +313,7 @@
     private async Task HandleCreate()
     {
         var response = await ProductService.CreateProductAsync(Product);
-        if (response.IsSuccess)
+        if (response.ResponseMessage.IsSuccessStatusCode)
         {
             NotificationService.Notify(new NotificationMessage
             {

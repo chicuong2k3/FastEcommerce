@@ -38,16 +38,4 @@ public static class ProductMapping
             SaleTo = variant.Price.SaleEffectiveRange?.To,
         };
     }
-
-    public static ProductImageReadModel ToReadModel(this ProductImage image)
-    {
-        if (image == null) throw new ArgumentNullException(nameof(image));
-        return new ProductImageReadModel
-        {
-            Url = image.Url,
-            AltText = image.AltText,
-            IsThumbnail = image.IsThumbnail,
-            SortOrder = image.SortOrder
-        };
-    }
 }

@@ -5,17 +5,12 @@ using IdentityServer.Components.Account;
 using IdentityServer.Configs;
 using IdentityServer.Data;
 using IdentityServer.Services;
-using IdentityServer8;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Facebook;
 using Microsoft.AspNetCore.Authentication.Google;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Builder.Extensions;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using Radzen;
 using Serilog;
@@ -65,7 +60,7 @@ builder.Services.AddSwaggerGen(c =>
 
 builder.Services.AddHttpClient("IdentityServerClient", options =>
 {
-    options.BaseAddress = new Uri("https://localhost:5001");
+    options.BaseAddress = new Uri(builder.Configuration["Host"] ?? throw new ArgumentNullException("Host is not configured"));
 });
 
 builder.Services.AddRazorComponents()

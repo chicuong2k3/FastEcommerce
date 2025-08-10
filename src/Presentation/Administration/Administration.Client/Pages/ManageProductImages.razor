@@ -1,7 +1,6 @@
 ﻿@page "/products/{ProductId:guid}/images"
 @using System.Security.Cryptography
 
-
 @inject IProductAttributeService ProductAttributeService
 @inject IProductService ProductService
 @inject IUploadService UploadService
@@ -128,13 +127,13 @@ else
     protected override async Task OnInitializedAsync()
     {
         var response = await ProductAttributeService.GetProductAttributesAsync();
-        if (response.IsSuccess)
+        if (response.ResponseMessage.IsSuccessStatusCode)
         {
-            attributes = response.Value.ToList();
+            attributes = response.GetContent().ToList();
         }
 
         var response2 = await ProductService.GetProductAsync(ProductId);
-        if (response2.IsSuccess)
+        if (response2.ResponseMessage.IsSuccessStatusCode)
         {
             // AttributeForCategorizeImagesId = response2.Value.AttributeForCategorizeImagesId;
             // if (AttributeForCategorizeImagesId == null)
@@ -143,9 +142,9 @@ else
             // }
 
             var response3 = await ProductAttributeService.GetAttributeValuesBelongToProductAsync(AttributeForCategorizeImagesId.Value, ProductId);
-            if (response3.IsSuccess)
+            if (response3.ResponseMessage.IsSuccessStatusCode)
             {
-                attributeValues = response3.Value.ToList();
+                attributeValues = response3.GetContent().ToList();
             }
         }
 
@@ -264,7 +263,7 @@ else
         isLoading = true;
         StateHasChanged();
 
-        var deleteTasks = new List<Task<(Guid AttributeValueId, Response Response)>>();
+        var deleteTasks = new List<Task<(Guid AttributeValueId, RestEase.Response<object> Response)>>();
         var imagesToDelete = new Dictionary<Guid, List<string>>();
 
         foreach (var kvp in selectedImageUrlsDict)
@@ -286,7 +285,7 @@ else
         bool anyFailure = false;
         foreach (var (attributeValueId, response) in responses)
         {
-            if (response.IsSuccess)
+            if (response.ResponseMessage.IsSuccessStatusCode)
             {
                 anySuccess = true;
                 if (imagesDict.ContainsKey(attributeValueId))

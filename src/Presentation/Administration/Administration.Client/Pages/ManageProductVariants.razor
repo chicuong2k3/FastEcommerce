@@ -1,7 +1,6 @@
 @page "/products/{ProductId:guid}/variants"
 @using System.Globalization
 
-
 @inject IProductAttributeService ProductAttributeService
 @inject IProductService ProductService
 @inject NavigationManager NavigationManager
@@ -192,9 +191,9 @@
     private async Task LoadAttributesAsync()
     {
         var response = await ProductAttributeService.GetProductAttributesAsync();
-        if (response.IsSuccess)
+        if (response.ResponseMessage.IsSuccessStatusCode)
         {
-            attributes = response.Value.ToList();
+            attributes = response.GetContent().ToList();
         }
     }
 
@@ -342,7 +341,7 @@
         foreach (var variant in generatedVariants)
         {
             var response = await ProductService.AddVariantAsync(ProductId, variant);
-            if (!response.IsSuccess)
+            if (!response.ResponseMessage.IsSuccessStatusCode)
             {
                 NotificationService.Notify(new NotificationMessage
                 {

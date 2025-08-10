@@ -3,8 +3,13 @@
 @inject ICategoryService CategoryService
 @inject NotificationService NotificationService
 @inject DialogService DialogService
+@* 
+@inherits TimeWarp.State.TimeWarpStateComponent *@
+
 
 <PageTitle>Quản lý danh mục</PageTitle>
+@* 
+@CurrentRenderMode *@
 
 <RadzenCard Visible="true" Variant="Radzen.Variant.Filled">
     <RadzenStack>
@@ -63,10 +68,10 @@
 
     private async Task LoadCategoriesAsync()
     {
-        var response = await CategoryService.GetCategoriesAsync(new GetCategoriesRequest());
-        if (response.IsSuccess)
+        var response = await CategoryService.GetCategoriesAsync(null);
+        if (response.ResponseMessage.IsSuccessStatusCode)
         {
-            categories = response.Value;
+            categories = response.GetContent();
             foreach (var category in categories)
             {
                 var hierarchy = await GetCategoryHierarchy(category);
@@ -92,10 +97,10 @@
                 break;
             }
             var response = await CategoryService.GetCategoryAsync(category.ParentCategoryId.Value);
-            if (response.IsSuccess)
+            if (response.ResponseMessage.IsSuccessStatusCode)
             {
-                stringBuilder.Insert(0, $"{response.Value.Name} > ");
-                category = response.Value;
+                stringBuilder.Insert(0, $"{response.GetContent().Name} > ");
+                category = response.GetContent();
             }
             else
             {
@@ -176,10 +181,10 @@
     private async Task HandleCreate()
     {
         var response = await CategoryService.CreateCategoryAsync(currentCategory);
-        if (response.IsSuccess)
+        if (response.ResponseMessage.IsSuccessStatusCode)
         {
-            categories = [.. categories, response.Value];
-            categoryHierarchyCache[response.Value.Id] = await GetCategoryHierarchy(response.Value);
+            categories = [.. categories, response.GetContent()];
+            categoryHierarchyCache[response.GetContent().Id] = await GetCategoryHierarchy(response.GetContent());
             NotificationService.Notify(new NotificationMessage
             {
                 Severity = NotificationSeverity.Success,
@@ -202,13 +207,13 @@
     private async Task HandleUpdate()
     {
         var response = await CategoryService.UpdateCategoryAsync(selectedCategoryId, currentCategory);
-        if (response.IsSuccess)
+        if (response.ResponseMessage.IsSuccessStatusCode)
         {
             var index = categories.FindIndex(c => c.Id == selectedCategoryId);
             var updatedCategories = new List<CategoryReadModel>(categories.Count);
             for (int i = 0; i < categories.Count; i++)
             {
-                updatedCategories.Add(i == index ? response.Value : categories[i]);
+                updatedCategories.Add(i == index ? response.GetContent() : categories[i]);
             }
 
             categories = updatedCategories;
@@ -233,7 +238,7 @@
     private async Task HandleDelete()
     {
         var response = await CategoryService.DeleteCategoryAsync(selectedForDeleteCategory.Id);
-        if (response.IsSuccess)
+        if (response.ResponseMessage.IsSuccessStatusCode)
         {
             categories = categories.Where(c => c.Id != selectedForDeleteCategory.Id).ToList();
             NotificationService.Notify(new NotificationMessage

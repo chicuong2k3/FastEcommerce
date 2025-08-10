@@ -5,18 +5,25 @@
 <div class="nav-item px-3">
     <AuthorizeView>
         <Authorized>
-            <form action="authentication/logout" method="post">
-                <AntiforgeryToken />
-                <input type="hidden" name="ReturnUrl" value="@currentUrl" />
-                <button type="submit" class="nav-link">
-                    <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout @context.User.Identity?.Name
-                </button>
-            </form>
+            <RadzenProfileMenu>
+                <Template>
+                    <RadzenGravatar Email="user@example.com">
+                    </RadzenGravatar>
+                </Template>
+                <ChildContent>
+                    <RadzenProfileMenuItem Text="Buttons" Path="buttons" Icon="account_circle"></RadzenProfileMenuItem>
+                    <RadzenProfileMenuItem Text="Menu" Path="menu" Icon="line_weight"></RadzenProfileMenuItem>
+                    <RadzenProfileMenuItem Text="FileInput" Path="fileinput" Icon="attach_file"></RadzenProfileMenuItem>
+                    <RadzenProfileMenuItem Text="Dialog" Path="dialog" Icon="perm_media"></RadzenProfileMenuItem>
+                    <RadzenProfileMenuItem Text="Đăng xuất" Path="@($"authentication/logout?returnUrl={currentUrl}")" Icon="announcement"></RadzenProfileMenuItem>
+                </ChildContent>
+            </RadzenProfileMenu>
         </Authorized>
+
         <NotAuthorized>
-            <a class="nav-link" href="authentication/login">
-                <span class="bi bi-person-badge-nav-menu" aria-hidden="true"></span> Login
-            </a>
+            <RadzenButton Click="@(() => NavigationManager.NavigateTo("authentication/login", forceLoad: true))" Variant="Variant.Flat">
+                Đăng nhập
+            </RadzenButton>
         </NotAuthorized>
     </AuthorizeView>
 </div>

@@ -1,14 +1,18 @@
 @inherits LayoutComponentBase
 
 
-<RadzenComponents @rendermode="InteractiveServer" />
+<RadzenComponents @rendermode="InteractiveWebAssembly" />
 <RadzenLayout Style="position: relative;grid-template-areas: 'rz-sidebar rz-header' 'rz-sidebar rz-body'">
     <RadzenHeader>
-        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0">
-            <RadzenSidebarToggle Click="@(() => sidebarExpanded = !sidebarExpanded)" />
-            <RadzenLabel Text="Header" />
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0">
+                <RadzenSidebarToggle Click="@(() => sidebarExpanded = !sidebarExpanded)" />
+                <RadzenLabel Text="Header" />
+            </RadzenStack>
+            <div style="padding: 0 24px">
+                <LogInOrOut />
+            </div>
         </RadzenStack>
-        <LogInOrOut />
     </RadzenHeader>
     <RadzenSidebar Responsive="false" @bind-Expanded="@sidebarExpanded">
         <RadzenPanelMenu>

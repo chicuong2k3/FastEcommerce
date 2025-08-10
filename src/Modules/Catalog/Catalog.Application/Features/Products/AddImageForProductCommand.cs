@@ -29,7 +29,7 @@ internal sealed class AddImageForProductCommandHandler(
             if (command.ProductAttributeValue != null)
             {
                 var productAttributeValues = await productAttributeRepository.GetValuesAsync(productAttribute.Id, cancellationToken);
-                var productAttributeValue = productAttributeValues.FirstOrDefault(x => x.Value.ToLower() == command.ProductAttributeValue);
+                var productAttributeValue = productAttributeValues.FirstOrDefault(x => x.Value.ToLower() == command.ProductAttributeValue.ToLower());
                 if (productAttributeValue == null)
                     return Result.Fail(new NotFoundError($"The product attribute value with value '{command.ProductAttributeValue}' not found"));
             }

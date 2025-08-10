@@ -28,4 +28,24 @@ internal class StockClient : IStockClient
 
         return await response.Content.ReadFromJsonAsync<StockReadModel>(cancellationToken: cancellationToken);
     }
+
+    public async Task<bool> ReserveStockAsync(Guid productId, Guid? productVariantId, int quantity, CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.PostAsJsonAsync(
+            "/api/stocks/reserve",
+            new
+            {
+                ProductId = productId,
+                ProductVariantId = productVariantId,
+                Quantity = quantity
+            },
+            cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return false;
+        }
+
+        return true;
+    }
 }

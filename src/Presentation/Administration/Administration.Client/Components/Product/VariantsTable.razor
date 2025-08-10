@@ -71,9 +71,9 @@
     private async Task LoadVariantsAsync()
     {
         var response = await ProductService.GetProductAsync(ProductId);
-        if (response.IsSuccess)
+        if (response.ResponseMessage.IsSuccessStatusCode)
         {
-            variants = response.Value.Variants.ToList();
+            variants = response.GetContent().Variants.ToList();
         }
     }
 
@@ -114,7 +114,7 @@
         if (variantToDelete != null)
         {
             var response = await ProductService.RemoveVariantAsync(ProductId, variantToDelete.Id);
-            if (response.IsSuccess)
+            if (response.ResponseMessage.IsSuccessStatusCode)
             {
                 variants = variants.Where(v => v.Id != variantToDelete.Id).ToList();
 
@@ -165,13 +165,13 @@
     private async Task HandleUpdate()
     {
         var response = await ProductService.UpdateVariantAsync(ProductId, variantToEditId, variantToEdit);
-        if (response.IsSuccess)
+        if (response.ResponseMessage.IsSuccessStatusCode)
         {
             var index = variants.FindIndex(v => v.Id == variantToEditId);
             var updatedVariants = new List<ProductVariantReadModel>(variants.Count);
             for (int i = 0; i < variants.Count; i++)
             {
-                updatedVariants.Add(i == index ? response.Value : variants[i]);
+                updatedVariants.Add(i == index ? response.GetContent() : variants[i]);
             }
 
             variants = updatedVariants;

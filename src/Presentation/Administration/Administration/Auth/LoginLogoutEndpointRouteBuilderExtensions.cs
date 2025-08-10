@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Administration.Client.Extensions;
+namespace Administration.Auth;
 
 internal static class LoginLogoutEndpointRouteBuilderExtensions
 {
@@ -14,7 +14,7 @@ internal static class LoginLogoutEndpointRouteBuilderExtensions
         group.MapGet("/login", (string? returnUrl) => TypedResults.Challenge(GetAuthProperties(returnUrl)))
             .AllowAnonymous();
 
-        group.MapPost("/logout", ([FromForm] string? returnUrl) => TypedResults.SignOut(GetAuthProperties(returnUrl),
+        group.MapGet("/logout", ([FromQuery] string? returnUrl) => TypedResults.SignOut(GetAuthProperties(returnUrl),
             [CookieAuthenticationDefaults.AuthenticationScheme, OpenIdConnectDefaults.AuthenticationScheme]));
 
         return group;

@@ -10,6 +10,8 @@ public class ProductImage : Entity<Guid>
     public Guid? ProductAttributeId { get; private set; }
     public string? ProductAttributeValue { get; private set; }
 
+    public Guid ProductId { get; set; }
+
     private ProductImage()
     {
     }

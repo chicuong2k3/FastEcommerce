@@ -71,7 +71,8 @@ namespace IdentityServer
                         "cart.read", "cart.write",
                         "order.read"
                     ],
-                    AllowOfflineAccess = true
+                    AllowOfflineAccess = true,
+                    RequirePkce = true
                 }
             ];
     }

@@ -63,11 +63,11 @@
     private async Task LoadAttributeValuesAsync()
     {
         var response = await ProductAttributeService.GetAttributeValuesAsync(ProductAttribute.Id);
-        Console.Write(response);
-        if (response.IsSuccess)
+
+        if (response.ResponseMessage.IsSuccessStatusCode)
         {
             currentPage = 1;
-            attributeValues = response.Value.ToList();
+            attributeValues = response.GetContent().ToList();
         }
         await InvokeAsync(StateHasChanged);
     }
@@ -110,7 +110,7 @@
     {
         var request = new RemoveValuesFromAttributeRequest { Values = selectedValues.ToList() };
         var response = await ProductAttributeService.RemoveValuesFromAttributeAsync(ProductAttribute.Id, request);
-        if (response.IsSuccess)
+        if (response.ResponseMessage.IsSuccessStatusCode)
         {
             attributeValues.RemoveAll(v => selectedValues.Contains(v.AttributeValue));
             if (PaginatedAttributeValues.Count() == 0 && currentPage > 1)

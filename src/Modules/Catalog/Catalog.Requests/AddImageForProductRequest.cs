@@ -1,5 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
+﻿
 namespace Catalog.Requests;
 
 public class AddImageForProductRequest

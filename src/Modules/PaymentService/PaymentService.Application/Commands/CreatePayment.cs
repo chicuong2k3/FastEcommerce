@@ -1,7 +1,6 @@
 ﻿namespace PaymentService.Application.Commands;
 
 public record CreatePayment(
-    Guid Id,
     Guid OrderId,
     Guid CustomerId,
     decimal TotalAmount,
@@ -19,7 +18,6 @@ internal class CreatePaymentHandler(
             return Result.Fail(new Error($"Invalid payment provider: {command.PaymentProvider}"));
 
         var payment = new Payment(
-                command.Id,
                 command.OrderId,
                 command.CustomerId,
                 totalAmount,

@@ -1,3 +1,5 @@
+using InventoryService.Contracts.ApiClients;
+
 namespace Ordering.Application.Orders;
 
 public record CheckoutCommand(
@@ -14,7 +16,8 @@ public record CheckoutCommand(
 
 internal sealed class CheckoutCommandHandler(
     IOrderRepository orderRepository,
-    ICartRepository cartRepository)
+    ICartRepository cartRepository,
+    IStockClient stockClient)
     : ICommandHandler<CheckoutCommand>
 {
     public async Task<Result> Handle(CheckoutCommand command, CancellationToken cancellationToken)
@@ -55,28 +58,11 @@ internal sealed class CheckoutCommandHandler(
         var orderItems = new List<OrderItem>();
         foreach (var item in cartItems)
         {
-            //if (!product.IsSimple && product.Variants.Any())
-            //{
-            //    var variant = product.Variants.FirstOrDefault(v => v.Id == item.ProductVariantId);
-            //    if (variant == null)
-            //        return Result.Fail(new Error($"Product variant with ID {item.ProductVariantId} not found for product {item.ProductId}."));
-
-            //    basePriceAmount = variant.BasePrice;
-            //    salePriceAmount = variant.SalePrice ?? basePriceAmount;
-
-            //    if (!IsOnSale(variant.SaleFrom, variant.SaleTo))
-            //    {
-            //        salePriceAmount = null;
-            //    }
-            //}
-
-            //var basePrice = Money.FromDecimal(basePriceAmount);
-            //var salePrice = Money.FromDecimal(salePriceAmount);
-
-            //if (item.BasePrice != basePrice || item.SalePrice != salePrice)
-            //{
-            //    return Result.Fail(new Error($"Price for product {product.Name} has changed. Please review your cart."));
-            //}
+            var reserveStockSuccess = await stockClient.ReserveStockAsync(item.ProductId, item.ProductVariantId, item.Quantity, cancellationToken);
+            if (!reserveStockSuccess)
+            {
+                return Result.Fail(new Error($"Not enough stock for product with ID '{item.ProductId}'"));
+            }
 
             var orderItem = new OrderItem(
                 item.ProductId,

@@ -11,7 +11,8 @@
         "inventoryservice.api": "StartDebugging",
         "ordering.api": "StartDebugging",
         "identity.api": "StartDebugging",
-        "identityserver": "StartDebugging"
+        "identityserver": "StartDebugging",
+        "administration": "StartDebugging"
       }
     }
   }

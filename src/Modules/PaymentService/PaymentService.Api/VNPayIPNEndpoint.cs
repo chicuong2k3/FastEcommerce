@@ -2,6 +2,7 @@
 
 //using FastEndpoints;
 //using Microsoft.Extensions.Logging;
+//using Prise;
 //using System.Security.Cryptography;
 //using System.Text;
 
@@ -11,14 +12,17 @@
 //{
 //    private readonly IPaymentRepository _paymentRepository;
 //    private readonly VNPayConfig _config;
+//    private readonly IPluginLoader _paymentPluginLoader;
 //    private readonly ILogger<VNPayIPNEndpoint> _logger;
 
 //    public VNPayIPNEndpoint(IPaymentRepository paymentRepository,
 //                             VNPayConfig config,
+//                             IPluginLoader paymentPluginLoader,
 //                             ILogger<VNPayIPNEndpoint> logger)
 //    {
 //        _paymentRepository = paymentRepository;
 //        _config = config;
+//        _paymentPluginLoader = paymentPluginLoader;
 //        _logger = logger;
 //    }
 

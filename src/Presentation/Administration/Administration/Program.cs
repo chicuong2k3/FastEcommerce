@@ -1,5 +1,4 @@
 using Administration.Auth;
-using Administration.Client.Extensions;
 using Administration.Components;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -7,7 +6,8 @@ using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using System.IdentityModel.Tokens.Jwt;
-using UIShared;
+using Administration.Client;
+using BlazorAutoBridge.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,7 +19,16 @@ builder.Services.AddRazorComponents()
         options.DetailedErrors = true;
     });
 
+
+/* Share Services */
 builder.Services.AddSharedServices();
+/* Share Services */
+
+builder.Services.AddBlazorAutoBridge((sp, client) =>
+{
+    client.BaseAddress = new Uri("https://localhost:20001/");
+    client.Timeout = TimeSpan.FromSeconds(5);
+});
 
 JwtSecurityTokenHandler.DefaultMapInboundClaims = false;
 builder.Services.AddAuthentication(options =>
@@ -58,6 +67,8 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<AuthenticationStateProvider, PersistingAuthenticationStateProvider>();
 builder.Services.AddHttpContextAccessor();
 
+builder.Services.ConfigureCookieOidcRefresh(CookieAuthenticationDefaults.AuthenticationScheme, OpenIdConnectDefaults.AuthenticationScheme);
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -86,5 +97,8 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 app.MapGroup("/authentication").MapLoginAndLogout();
+
+
+app.MapControllers();
 
 app.Run();

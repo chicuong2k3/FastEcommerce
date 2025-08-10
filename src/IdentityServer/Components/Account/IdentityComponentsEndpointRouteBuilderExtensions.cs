@@ -14,7 +14,7 @@ namespace IdentityServer.Components.Account
 
             var accountGroup = endpoints.MapGroup("/Account");
 
-            accountGroup.MapPost("/Logout", async (
+            accountGroup.MapGet("/Logout", async (
                 ClaimsPrincipal user,
                 SignInManager<ApplicationUser> signInManager,
                 [FromForm] string returnUrl) =>

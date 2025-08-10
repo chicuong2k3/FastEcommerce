@@ -2,7 +2,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using System.Security.Claims
 
-@attribute [Authorize]
+
 
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
@@ -17,10 +17,10 @@
 
     private List<Claim> claims = [];
 
-    protected override async Task OnInitializedAsync()
-    {
-        authenticationState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+    // protected override async Task OnInitializedAsync()
+    // {
+    //     authenticationState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
 
-        claims = authenticationState.User.Claims.ToList();
-    }
+    //     claims = authenticationState.User.Claims.ToList();
+    // }
 }

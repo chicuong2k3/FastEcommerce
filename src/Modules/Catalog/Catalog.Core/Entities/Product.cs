@@ -262,6 +262,9 @@ public sealed class Product : AggregateRoot<Guid>
             productAttributeValue);
 
         _images.Add(image);
+
+        Raise(new ProductImageAdded(Id, image.Id));
+
         return Result.Ok();
     }
 

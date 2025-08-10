@@ -11,8 +11,7 @@ public static class RegisterServices
 {
     public static IServiceCollection AddSharedServices(this IServiceCollection services)
     {
-        services.AddRadzenComponents();
-        services.AddValidatorsFromAssembly(Catalog.Requests.AssemblyInfo.Ref);
+
 
         services.AddScoped<ResponseHandler>();
         services.AddHttpClient("ApiClient", client =>

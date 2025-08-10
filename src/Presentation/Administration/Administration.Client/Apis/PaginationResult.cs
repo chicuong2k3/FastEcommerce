@@ -1,4 +1,4 @@
-﻿namespace UIShared.Models;
+﻿namespace Administration.Client.Apis;
 
 public class PaginationResult<T> where T : class
 {

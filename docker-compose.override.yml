@@ -66,7 +66,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_MULTIPLE_DATABASES: fast-ecommerce-catalog,fast-ecommerce-inventory,fast-ecommerce-ordering
+      POSTGRES_MULTIPLE_DATABASES: fast-ecommerce-catalog,fast-ecommerce-inventory,fast-ecommerce-ordering, identityserver
     volumes:
       - catalog_postgres_data:/var/lib/postgresql/data/
     healthcheck:
@@ -172,6 +172,8 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=8080
       - ASPNETCORE_HTTPS_PORTS=8081
+      - Host=http://identityserver:8080
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=identityserver;Username=postgres;Password=postgres;Trust Server Certificate=true
     ports:
       - "5000:8080"
       - "5001:8081"

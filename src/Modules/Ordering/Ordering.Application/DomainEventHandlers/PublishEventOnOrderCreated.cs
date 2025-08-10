@@ -17,7 +17,8 @@ internal class PublishEventOnOrderCreated
     {
         var integrationEvent = new OrderCreatedIntegrationEvent(
             domainEvent.OrderId,
-            domainEvent.CustomerId);
+            domainEvent.CustomerId,
+            domainEvent.TotalAmount);
 
         await _eventBus.PublishAsync(integrationEvent);
     }
