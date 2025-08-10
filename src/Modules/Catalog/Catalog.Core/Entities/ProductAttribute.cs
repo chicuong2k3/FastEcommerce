@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace Catalog.Core.Entities;
+﻿namespace Catalog.Core.Entities;
 
 public class ProductAttribute : AggregateRoot<Guid>
 {
@@ -8,6 +6,9 @@ public class ProductAttribute : AggregateRoot<Guid>
     public string DisplayName { get; private set; }
     public bool IsOption { get; private set; }
     public string? Unit { get; private set; }
+
+    private List<ProductAttributeValue> _values = new();
+    public IReadOnlyCollection<ProductAttributeValue> Values => [.. _values];
 
     private ProductAttribute()
     {
@@ -50,6 +51,27 @@ public class ProductAttribute : AggregateRoot<Guid>
         }
 
         Unit = unit;
+        return Result.Ok();
+    }
+
+    public Result ChangeIsOption(bool isOption)
+    {
+        if (isOption && !string.IsNullOrEmpty(Unit))
+        {
+            return Result.Fail("Cannot change to option-based attribute with a unit defined.");
+        }
+        IsOption = isOption;
+        return Result.Ok();
+    }
+
+    public Result AddValue(string value)
+    {
+        if (_values.Any(v => v.Value.Equals(value, StringComparison.OrdinalIgnoreCase)))
+        {
+            return Result.Fail($"The value '{value}' already exists for this attribute.");
+        }
+        var attributeValue = new ProductAttributeValue(Id, value);
+        _values.Add(attributeValue);
         return Result.Ok();
     }
 }

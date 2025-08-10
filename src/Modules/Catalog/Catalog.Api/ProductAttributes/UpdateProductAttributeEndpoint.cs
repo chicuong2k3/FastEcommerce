@@ -18,7 +18,7 @@ public class UpdateProductAttributeEndpoint : Endpoint<CreateUpdateProductAttrib
     public override async Task HandleAsync(CreateUpdateProductAttributeRequest req, CancellationToken ct)
     {
         var id = Route<Guid>("id");
-        var result = await _mediator.Send(new UpdateProductAttributeCommand(id, req.Name, req.DisplayName, req.Unit), ct);
+        var result = await _mediator.Send(new UpdateProductAttributeCommand(id, req.Name, req.DisplayName, req.IsOption, req.Unit), ct);
         await this.ToHttpResultAsync(result, ct);
     }
 }

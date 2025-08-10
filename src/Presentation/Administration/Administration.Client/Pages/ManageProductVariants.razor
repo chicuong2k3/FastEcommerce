@@ -27,7 +27,7 @@
         </RadzenText>
         <RadzenRow>
             <RadzenColumn SizeSM="6" SizeMD="3">
-                <RadzenFormField Text="Giá" Variant="Radzen.Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%">
+                <RadzenFormField Text="Giá gốc" Variant="Radzen.Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%">
                     <ChildContent>
                         <RadzenNumeric @bind-Value="commonVariant.BasePrice" Style="width: 100%" />
                     </ChildContent>
@@ -79,20 +79,27 @@
 
 
 
-        <RadzenText TextStyle="TextStyle.Body2">
-            Thuộc tính sản phẩm
-        </RadzenText>
+        <RadzenLabel Text="Thuộc tính sản phẩm" />
         @foreach (var attr in attributes)
         {
-            if (attributeFilters.TryGetValue(attr.Id, out var filter) && filter.PossibleValues.Any())
-            {
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
                 <RadzenFormField Text="@attr.Name.CapitalizeFirstLetterOfFirstWord()" Variant="Variant.Outlined">
                     <ChildContent>
-                        <RadzenDropDown Multiple="true" @bind-Value="@filter.SelectedValueIds" Data="@filter.PossibleValues" TextProperty="Value" ValueProperty="Id" Placeholder="Chọn giá trị" Change="@(() => GenerateVariants())" Style="width: 100%;" Chips="true" />
+                        @if (attributeFilters.TryGetValue(attr.Id, out var filter) && filter.PossibleValues.Any())
+                        {
+                            <RadzenDropDown Multiple="true" @bind-Value="@filter.SelectedValues" Data="@filter.PossibleValues" TextProperty="Value" ValueProperty="Id" Placeholder="Chọn giá trị" Change="@(() => GenerateVariants())" Style="width: 100%;" Chips="true" />
+                        }
                     </ChildContent>
                 </RadzenFormField>
-            }
+
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+                    <RadzenButton Icon="add" ButtonStyle="ButtonStyle.Primary" Click="@(() => ShowAddProductAttributeValueDialog(attr))" class="rz-border-radius-10" />
+                </RadzenStack>
+            </RadzenStack>
+
         }
+
+
         @if (generatedVariants.Any())
         {
             <RadzenText TextStyle="TextStyle.Body2" Style="margin-top: 12px;">
@@ -151,8 +158,8 @@
 
     private class AttributeFilter
     {
-        public List<(Guid Id, string Value)> PossibleValues { get; set; } = new();
-        public List<Guid> SelectedValueIds { get; set; } = new();
+        public List<string> PossibleValues { get; set; } = new();
+        public List<string> SelectedValues { get; set; } = new();
     }
 
     private List<ProductAttributeReadModel> attributes = new();
@@ -165,6 +172,8 @@
     private bool showEditModal = false;
     private AddVariantRequest editingVariant = new();
 
+    private AddValueForProductAttributeRequest addValueForProductAttributeRequest = new();
+
     protected override async Task OnInitializedAsync()
     {
         await LoadAttributesAsync();
@@ -172,20 +181,25 @@
             attr => attr.Id,
             attr => new AttributeFilter
             {
-                PossibleValues = new List<(Guid Id, string Value)>()
+                PossibleValues = new()
             }
         );
 
-        // foreach (var attr in attributes)
-        // {
-        //     var response = await ProductAttributeService.GetAttributeValuesAsync(attr.Id);
-        //     if (response.IsSuccess)
-        //     {
-        //         attributeFilters[attr.Id].PossibleValues = response.Value
-        //             .Select(av => (av.AttributeValueId, av.AttributeValue))
-        //             .ToList();
-        //     }
-        // }
+        foreach (var attr in attributes)
+        {
+            var response = await ProductAttributeService.GetAttributeValuesAsync(attr.Id);
+            if (response.ResponseMessage.IsSuccessStatusCode)
+            {
+                attributeFilters[attr.Id].PossibleValues = response.GetContent()
+                    .Select(av => av.AttributeValue)
+                    .ToList();
+            }
+
+            // if (attributeFilters[attr.Id].PossibleValues.Count == 0)
+            // {
+            //     attributeFilters[attr.Id].PossibleValues.Add("Chưa có giá trị");
+            // }
+        }
     }
 
     private async Task LoadAttributesAsync()
@@ -246,18 +260,18 @@
         // }
     }
 
-    private List<Dictionary<Guid, Guid>> GetAttributeCombinations()
+    private List<Dictionary<Guid, string>> GetAttributeCombinations()
     {
-        var combinations = new List<Dictionary<Guid, Guid>> { new() };
+        var combinations = new List<Dictionary<Guid, string>> { new() };
         foreach (var filter in attributeFilters)
         {
-            if (!filter.Value.SelectedValueIds.Any()) continue;
-            var newCombinations = new List<Dictionary<Guid, Guid>>();
-            foreach (var valueId in filter.Value.SelectedValueIds)
+            if (!filter.Value.SelectedValues.Any()) continue;
+            var newCombinations = new List<Dictionary<Guid, string>>();
+            foreach (var value in filter.Value.SelectedValues)
             {
                 foreach (var combo in combinations)
                 {
-                    var newCombo = new Dictionary<Guid, Guid>(combo) { { filter.Key, valueId } };
+                    var newCombo = new Dictionary<Guid, string>(combo) { { filter.Key, value } };
                     newCombinations.Add(newCombo);
                 }
             }
@@ -286,21 +300,51 @@
         return [];
     }
 
-    private (string AttributeName, string AttributeValue)? GetAttributeValueInfo(Guid valueId)
+    private (string AttributeName, string AttributeValue)? GetAttributeValueInfo(string val)
     {
         foreach (var attr in attributes)
         {
             var value = attributeFilters[attr.Id].PossibleValues
-                .FirstOrDefault(v => v.Id == valueId);
-            if (value.Id != Guid.Empty)
+                .FirstOrDefault(v => v == val);
+            if (!string.IsNullOrEmpty(value))
             {
-                return (attr.Name, value.Value);
+                return (attr.Name, value);
             }
         }
         return null;
     }
 
+    private async Task ShowAddProductAttributeValueDialog(ProductAttributeReadModel productAttribute)
+    {
+        var ok = await DialogService.OpenAsync<AddProductAttributeValueModal>($"Thêm giá trị cho thuộc tính '{productAttribute.DisplayName}'",
+        new Dictionary<string, object>()
+        {
+            { "AttributeValue", addValueForProductAttributeRequest }
+        });
 
+        if (ok == true)
+        {
+            var response = await ProductAttributeService.AddValueToAttributeAsync(productAttribute.Id, addValueForProductAttributeRequest);
+            if (!response.ResponseMessage.IsSuccessStatusCode)
+            {
+                NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = $"Thêm thất bại",
+                    Duration = 3000
+                });
+            }
+            else
+            {
+                NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = $"Thêm thành công",
+                    Duration = 3000
+                });
+            }
+        }
+    }
 
     private void ShowEditVariantModal(AddVariantRequest variant)
     {

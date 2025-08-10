@@ -27,12 +27,17 @@
                         @productAttribute.DisplayName
                     </Template>
                 </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="ProductAttributeReadModel" Property="IsOption" Title="Là thuộc tính dùng để phân loại">
+                    <Template Context="productAttribute">
+                        <RadzenCheckBox Value="@productAttribute.IsOption" ReadOnly="true" />
+                    </Template>
+                </RadzenDataGridColumn>
                 <RadzenDataGridColumn TItem="ProductAttributeReadModel" Title="Hành động" Sortable="false" Filterable="false">
                     <Template Context="productAttribute">
                         <RadzenStack Orientation="Orientation.Horizontal" Gap="8px">
-                            <RadzenButton Text="Chỉnh sửa" ButtonStyle="ButtonStyle.Warning" Size="ButtonSize.Medium" Variant="Variant.Flat" Click="@(() => ShowEditModal(productAttribute))" />
-                            <RadzenButton Text="Xóa" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Medium" Variant="Variant.Flat" Click="@(() => ShowDeleteModal(productAttribute))" />
-                            <RadzenButton Text="Các giá trị" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Medium" Variant="Variant.Flat" Click="@(() => ShowProductAttributeValuesModal(productAttribute))" />
+                            <RadzenButton Text="Chỉnh sửa" ButtonStyle="ButtonStyle.Warning" Size="ButtonSize.Small" Variant="Variant.Flat" Click="@(() => ShowEditModal(productAttribute))" />
+                            <RadzenButton Text="Xóa" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Variant="Variant.Flat" Click="@(() => ShowDeleteModal(productAttribute))" />
+                            <RadzenButton Text="Các giá trị" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small" Variant="Variant.Flat" Click="@(() => ShowProductAttributeValuesModal(productAttribute))" />
                         </RadzenStack>
                     </Template>
                 </RadzenDataGridColumn>
@@ -97,7 +102,9 @@
         currentProductAttribute = new CreateUpdateProductAttributeRequest
         {
             Name = productAttribute.Name,
-            DisplayName = productAttribute.DisplayName
+            DisplayName = productAttribute.DisplayName,
+            IsOption = productAttribute.IsOption,
+            Unit = productAttribute.Unit
         };
 
         var ok = await DialogService.OpenAsync<CreateEditProductAttributeModal>("Chỉnh sửa thuộc tính sản phẩm",

@@ -7,6 +7,12 @@
 ### Inventory
 
 
+# Bugs
+
+- Update category not reflecting the updated info in the UI.
+- Does not notify when add attribute fails.
+- 
+
 # Paging challenges in CQRS
 
 ## Client-side vs Server-side paging

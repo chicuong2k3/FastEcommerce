@@ -81,7 +81,9 @@ public static class ServicesRegistrator
             var interceptor = sp.GetRequiredService<DomainEventsToOutboxMessagesInterceptor>();
             options.UseNpgsql(dbConnectionString)
                    .AddInterceptors(interceptor)
-            .EnableSensitiveDataLogging(false);
+
+            .LogTo(Console.WriteLine, LogLevel.Information)
+            .EnableSensitiveDataLogging();
         };
         var invokeParams = new object[]
         {

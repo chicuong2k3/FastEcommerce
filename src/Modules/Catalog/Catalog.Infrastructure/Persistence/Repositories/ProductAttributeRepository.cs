@@ -14,12 +14,6 @@ internal class ProductAttributeRepository : RepositoryBase<ProductAttribute, Gui
         _dbContext = dbContext;
     }
 
-    public async Task AddValue(ProductAttributeValue productAttributeValue, CancellationToken cancellationToken = default)
-    {
-        _dbContext.ProductAttributeValues.Add(productAttributeValue);
-        await _dbContext.SaveChangesAsync();
-    }
-
     public Task<List<ProductAttribute>> GetAttributesAsync(CancellationToken cancellationToken = default)
     {
         return _dbContext.ProductAttributes
@@ -29,6 +23,7 @@ internal class ProductAttributeRepository : RepositoryBase<ProductAttribute, Gui
     public async Task<ProductAttribute?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await _dbContext.ProductAttributes
+            .Include(a => a.Values)
             .FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
     }
 
@@ -41,6 +36,7 @@ internal class ProductAttributeRepository : RepositoryBase<ProductAttribute, Gui
     public async Task<ProductAttribute?> GetByNameAsync(string name, CancellationToken cancellationToken = default)
     {
         return await _dbContext.ProductAttributes
+            .Include(a => a.Values)
             .FirstOrDefaultAsync(a => a.Name.ToLower() == name.ToLower(), cancellationToken);
     }
 

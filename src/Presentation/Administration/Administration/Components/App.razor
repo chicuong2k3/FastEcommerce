@@ -9,12 +9,12 @@
     <link rel="stylesheet" href="" app.css" />
     <link rel="stylesheet" href="Administration.styles.css" />
 
-    <HeadOutlet @rendermode="InteractiveWebAssembly" />
-    <RadzenTheme Theme="humanistic" @rendermode="InteractiveWebAssembly" />
+    <HeadOutlet @rendermode="InteractiveServer" />
+    <RadzenTheme Theme="humanistic" @rendermode="InteractiveServer" />
 </head>
 
 <body>
-    <Routes @rendermode="InteractiveWebAssembly" />
+    <Routes @rendermode="InteractiveServer" />
 
     <script src="_framework/blazor.web.js"></script>
     <script src="_content/Radzen.Blazor/Radzen.Blazor.js?v=@(typeof(Radzen.Colors).Assembly.GetName().Version)"></script>

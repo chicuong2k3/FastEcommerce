@@ -10,12 +10,15 @@ internal sealed class ProductAttributeValueConfiguration : IEntityTypeConfigurat
     {
         builder.HasKey(pva => pva.Id);
 
+        builder.Property(pva => pva.Id)
+            .ValueGeneratedNever();
+
         builder.Property(pva => pva.Value)
             .IsRequired()
             .HasMaxLength(100);
 
         builder.HasOne(pva => pva.Attribute)
-            .WithMany()
+            .WithMany(a => a.Values)
             .HasForeignKey(pva => pva.AttributeId);
     }
 }

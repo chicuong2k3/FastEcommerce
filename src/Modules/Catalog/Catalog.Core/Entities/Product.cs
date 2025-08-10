@@ -104,8 +104,11 @@ public sealed class Product : AggregateRoot<Guid>
             var productAttributeValue = productAttributeValues.FirstOrDefault(x => x.Value.ToLower() == pair.ProductAttributeValue.ToLower());
             if (productAttributeValue == null)
             {
-                productAttributeValue = new ProductAttributeValue(pair.ProductAttributeId, pair.ProductAttributeValue);
-                await productAttributeRepository.AddValue(productAttributeValue);
+                var result = productAttribute.AddValue(pair.ProductAttributeValue);
+                if (result.IsFailed)
+                {
+                    return Result.Fail(result.Errors);
+                }
             }
         }
 
@@ -152,8 +155,11 @@ public sealed class Product : AggregateRoot<Guid>
             var productAttributeValue = productAttributeValues.FirstOrDefault(x => x.Value.ToLower() == pair.ProductAttributeValue.ToLower());
             if (productAttributeValue == null)
             {
-                productAttributeValue = new ProductAttributeValue(pair.ProductAttributeId, pair.ProductAttributeValue);
-                await productAttributeRepository.AddValue(productAttributeValue);
+                result = productAttribute.AddValue(pair.ProductAttributeValue);
+                if (result.IsFailed)
+                {
+                    return Result.Fail(result.Errors);
+                }
             }
 
             var addAttributeResult = variant.AddAttribute(productAttributeValue);

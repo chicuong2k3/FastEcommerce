@@ -3,6 +3,7 @@
 public record UpdateProductAttributeCommand(Guid Id,
                                             string NewName,
                                             string? NewDisplayName,
+                                            bool IsOption,
                                             string? Unit) : ICommand<ProductAttributeReadModel>;
 
 internal class UpdateProductAttributeCommandHandler(IProductAttributeRepository productAttributeRepository)
@@ -20,7 +21,12 @@ internal class UpdateProductAttributeCommandHandler(IProductAttributeRepository 
 
         productAttribute.ChangeName(command.NewName);
         productAttribute.ChangeDisplayName(command.NewDisplayName);
-        productAttribute.ChangeUnit(command.Unit);
+        var result = productAttribute.ChangeUnit(command.Unit);
+        if (result.IsFailed)
+            return Result.Fail(result.Errors);
+        result = productAttribute.ChangeIsOption(command.IsOption);
+        if (result.IsFailed)
+            return Result.Fail(result.Errors);
 
         await productAttributeRepository.SaveChangesAsync(cancellationToken);
         return Result.Ok(productAttribute.ToReadModel());

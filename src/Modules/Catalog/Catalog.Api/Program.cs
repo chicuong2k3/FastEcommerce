@@ -1,4 +1,5 @@
 using Catalog.Infrastructure;
+using Catalog.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,7 +10,5 @@ var app = builder.Build();
 
 
 app.UseSharedApi(builder.Configuration);
-
-
 
 app.Run();

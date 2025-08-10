@@ -3,7 +3,7 @@
 public record CreateProductAttributeCommand(
     string Name,
     string? DisplayName,
-    bool? IsOption,
+    bool IsOption,
     string? Unit) : ICommand<ProductAttributeReadModel>;
 
 internal class CreateProductAttributeCommandHandler(IProductAttributeRepository productAttributeRepository)
@@ -17,7 +17,7 @@ internal class CreateProductAttributeCommandHandler(IProductAttributeRepository 
             return Result.Fail($"Product attribute with name '{command.Name}' already exist");
         }
 
-        var result = ProductAttribute.Create(command.Name, command.DisplayName, command.IsOption ?? true, command.Unit);
+        var result = ProductAttribute.Create(command.Name, command.DisplayName, command.IsOption, command.Unit);
         if (result.IsFailed)
         {
             return Result.Fail(result.Errors);
