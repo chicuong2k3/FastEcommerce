@@ -40,7 +40,7 @@
 
 @code {
     [Parameter]
-    public ProductAttributeReadModel ProductAttribute { get; set; }
+    public ProductAttributeReadModel ProductAttribute { get; set; } = new();
     private List<AttributeValueReadModel> attributeValues = new();
     private HashSet<string> selectedValues = new();
     private bool selectAll = false;

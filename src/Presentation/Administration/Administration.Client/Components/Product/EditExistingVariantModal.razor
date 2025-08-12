@@ -43,7 +43,7 @@
 
 @code {
     [Parameter]
-    public UpdateVariantRequest EditingVariant { get; set; }
+    public UpdateVariantRequest EditingVariant { get; set; } = new();
 
     private string priceValidationError = string.Empty;
     private string quantityValidationError = string.Empty;

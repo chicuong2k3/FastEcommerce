@@ -106,7 +106,7 @@
     private string searchTerm = string.Empty;
     private List<ProductReadModel> products = new();
     private Guid selectedProductId;
-    private ProductReadModel selectedForDeleteProduct;
+    private ProductReadModel selectedForDeleteProduct = new();
     private bool isEditMode = false;
     private CreateUpdateProductRequest Product = new();
     private List<ProductVariantReadModel> variants = new();

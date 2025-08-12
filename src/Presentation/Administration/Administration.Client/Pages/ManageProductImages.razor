@@ -111,7 +111,7 @@ else
     public Guid ProductId { get; set; }
 
     private Dictionary<Guid, List<string>> imagesDict = new();
-    private Guid? AttributeForCategorizeImagesId;
+    private Guid? AttributeForCategorizeImagesId = null;
     private List<AttributeValueReadModel> attributeValues = new();
     private AddImageForProductRequest addRequest = new();
     private string validationError = string.Empty;

@@ -75,17 +75,6 @@ services:
       timeout: 5s
       retries: 5
 
-  mongodb:
-    container_name: mongodb
-    restart: always
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: admin
-    ports:
-      - "27018:27017"
-    volumes:
-      - catalog_mongodb_data:/data/db
-
   apigateway:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development

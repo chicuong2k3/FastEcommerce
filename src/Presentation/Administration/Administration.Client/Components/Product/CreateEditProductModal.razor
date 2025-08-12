@@ -194,7 +194,7 @@
 
 @code {
     [Parameter]
-    public CreateUpdateProductRequest Product { get; set; }
+    public CreateUpdateProductRequest Product { get; set; } = new();
     [Parameter]
     public List<CategoryReadModel> Categories { get; set; }
     [Parameter]

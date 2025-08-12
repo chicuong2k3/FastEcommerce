@@ -110,7 +110,7 @@
 
 @code {
     [Parameter]
-    public List<CategoryReadModel> Categories { get; set; }
+    public List<CategoryReadModel> Categories { get; set; } = new();
     [Parameter]
     public CreateUpdateCategoryRequest Category { get; set; }
 

@@ -26,30 +26,10 @@ public static class CatalogModule
             typeof(CatalogDbContext)
         );
 
-        var mongoConnectionString = configuration.GetConnectionString("Mongo");
-        var mongoClientSettings = MongoClientSettings.FromConnectionString(mongoConnectionString);
-        mongoClientSettings.ClusterConfigurator = c => c.Subscribe(new DiagnosticsActivityEventSubscriber
-        (
-            new InstrumentationOptions()
-            {
-                CaptureCommandText = true
-            }
-        ));
-
-        services.AddHealthChecks()
-           .AddMongoDb(
-                clientFactory: sp => sp.GetRequiredService<IMongoClient>()
-            );
-
-        services.AddSingleton<IMongoClient>(new MongoClient(mongoClientSettings));
-
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<IProductAttributeRepository, ProductAttributeRepository>();
         services.AddScoped<IBrandRepository, BrandRepository>();
-
-        services.AddScoped<ICatalogMongoContext, CatalogMongoContext>();
-
     }
 
     public static void ConfigureConsumers(this IRegistrationConfigurator registrationConfiguration)

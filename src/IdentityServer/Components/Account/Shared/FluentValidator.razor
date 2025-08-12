@@ -14,7 +14,7 @@
     [Parameter, EditorRequired] public IValidator<TModel> Validator { get; set; }
 
     private FieldIdentifier fieldIdentifier;
-    private RadzenCustomValidator customValidator;
+    private RadzenCustomValidator customValidator = new();
     private string errorMessage = string.Empty;
 
     protected override void OnInitialized()

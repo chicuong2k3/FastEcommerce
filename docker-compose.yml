@@ -22,9 +22,6 @@ services:
   postgres:
     image: postgres:latest
 
-  mongodb:
-    image: mongo:latest
-
   catalog.api:
     image: ${DOCKER_REGISTRY-}catalogapi
     build:
@@ -62,7 +59,6 @@ volumes:
   rabbitmq_data:
   rabbitmq_log:
   catalog_postgres_data:
-  catalog_mongodb_data:
 
 
 

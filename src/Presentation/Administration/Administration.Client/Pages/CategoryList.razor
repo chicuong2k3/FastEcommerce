@@ -63,7 +63,7 @@
     private List<CategoryReadModel> categories = new();
     private CreateUpdateCategoryRequest currentCategory = new();
     private Guid selectedCategoryId;
-    private CategoryReadModel selectedForDeleteCategory;
+    private CategoryReadModel selectedForDeleteCategory = new();
     private Dictionary<Guid, string> categoryHierarchyCache = new();
 
     private async Task LoadCategoriesAsync()
