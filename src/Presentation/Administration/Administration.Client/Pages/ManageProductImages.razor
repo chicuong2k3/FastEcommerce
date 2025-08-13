@@ -10,46 +10,47 @@
 <PageTitle>Quản lý ảnh sản phẩm</PageTitle>
 
 
-@if (attributeValues.Any())
-{
-    <RadzenCard>
-        <RadzenStack>
-            <RadzenText TextStyle="TextStyle.H5">
-                Thêm ảnh sản phẩm
-            </RadzenText>
-            @* <RadzenFormField Text="Giá trị thuộc tính" Variant="Variant.Outlined">
-                    <ChildContent>
-                        <RadzenDropDown @bind-Value="@addRequest.AttributeValueId" Data="@attributeValues" TextProperty="AttributeValue" ValueProperty="ProductAttributeValueId" Placeholder="Chọn giá trị" Style="width: 100%;" Disabled="@(attributeValues.Count == 0)" />
-                    </ChildContent>
-                    <Helper>
-                        <RadzenLabel Text="@validationError" Style="color: red;" Visible="@(!string.IsNullOrEmpty(validationError))" />
-                    </Helper>
-                </RadzenFormField> *@
-            <RadzenFormField Text="Ảnh" Variant="Variant.Outlined">
-                <ChildContent>
-                    <DragAndDropFileUpload Disabled="@isUploading" Multiple="true" Accept="images/*" Url="upload/multiple" />
-                </ChildContent>
-            </RadzenFormField>
-            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="8px" Style="margin-top: 8px;">
-                <RadzenButton Text="Thêm ảnh" ButtonStyle="ButtonStyle.Primary" Variant="Variant.Flat" Click="@SubmitAddImages" Disabled="@(isUploading || isLoading)" />
-            </RadzenStack>
-        </RadzenStack>
-    </RadzenCard>
 
-    <!-- Existing Images -->
-    <RadzenCard Style="margin: 8px 0;">
-        <RadzenStack>
-            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-                <RadzenText TextStyle="TextStyle.H5">
-                    Danh sách ảnh
-                </RadzenText>
-                <RadzenButton Text="Xoá ảnh đã chọn" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="ShowDeleteModal" Disabled="@(!selectedImageUrlsDict.Any(kvp => kvp.Value.Any()))" />
-            </RadzenStack>
-            @if (imagesDict.Any())
+<RadzenCard>
+    <RadzenStack>
+        <RadzenText TextStyle="TextStyle.H5">
+            Thêm ảnh sản phẩm
+        </RadzenText>
+        <RadzenFormField Text="Thuộc tính" Variant="Variant.Outlined">
+            <ChildContent>
+                <RadzenDropDown @bind-Value="@addRequest.ProductAttributeId" Data="@attributes" TextProperty="DisplayName" ValueProperty="Id" Placeholder="Chọn thuộc tính" Style="width: 100%;" Disabled="@(attributes.Count == 0)" />
+            </ChildContent>
+        </RadzenFormField>
+        <RadzenFormField Text="Giá trị thuộc tính" Variant="Variant.Outlined">
+            <ChildContent>
+                <RadzenDropDown @bind-Value="@addRequest.ProductAttributeValue" Data="@attributeValues" TextProperty="DisplayName" ValueProperty="Id" Placeholder="Chọn giá trị" Style="width: 100%;" Disabled="@(attributeValues.Count == 0)" />
+            </ChildContent>
+        </RadzenFormField>
+        <RadzenFormField Text="Ảnh" Variant="Variant.Outlined">
+            <ChildContent>
+                <DragAndDropFileUpload Disabled="@isUploading" Multiple="true" Accept="images/*" />
+            </ChildContent>
+        </RadzenFormField>
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="8px" Style="margin-top: 8px;">
+            <RadzenButton Text="Thêm ảnh" ButtonStyle="ButtonStyle.Primary" Variant="Variant.Flat" Click="@SubmitAddImages" Disabled="@(isUploading || isLoading)" />
+        </RadzenStack>
+    </RadzenStack>
+</RadzenCard>
+
+<!-- Existing Images -->
+<RadzenCard Style="margin: 8px 0;">
+    <RadzenStack>
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+            <RadzenText TextStyle="TextStyle.H5">
+                Danh sách ảnh
+            </RadzenText>
+            <RadzenButton Text="Xoá ảnh đã chọn" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="ShowDeleteModal" Disabled="@(!selectedImageUrlsDict.Any(kvp => kvp.Value.Any()))" />
+        </RadzenStack>
+        @if (imagesDict.Any())
+        {
+            @foreach (var kvp in imagesDict)
             {
-                @foreach (var kvp in imagesDict)
-                {
-                    @* var attributeValue = attributeValues.FirstOrDefault(x => x.AttributeValue == kvp.Key);
+                @* var attributeValue = attributeValues.FirstOrDefault(x => x.AttributeValue == kvp.Key);
                         if (attributeValue != null)
                         {
                             <RadzenStack>
@@ -80,23 +81,16 @@
                                 }
                             </RadzenStack>
                         } *@
-                }
             }
-            else
-            {
-                <RadzenText TextStyle="TextStyle.Body2">
-                    Không có ảnh nào được tải lên cho sản phẩm này.
-                </RadzenText>
-            }
-        </RadzenStack>
-    </RadzenCard>
-}
-else
-{
-    <RadzenText TextStyle="TextStyle.H5">
-        Vui lòng thêm biến thể cho sản phẩm.
-    </RadzenText>
-}
+        }
+        else
+        {
+            <RadzenText TextStyle="TextStyle.Body2">
+                Không có ảnh nào được tải lên cho sản phẩm này.
+            </RadzenText>
+        }
+    </RadzenStack>
+</RadzenCard>
 
 @code {
     [Parameter]
@@ -105,7 +99,6 @@ else
     private Dictionary<Guid, List<string>> imagesDict = new();
     private List<AttributeValueReadModel> attributeValues = new();
     private AddImageForProductRequest addRequest = new();
-    private string validationError = string.Empty;
     private List<ProductAttributeReadModel> attributes = new();
     private Dictionary<Guid, List<string>> selectedImageUrlsDict = new();
     private const long MaxFileSizeInMB = 10;
@@ -123,21 +116,11 @@ else
             attributes = response.GetContent().ToList();
         }
 
-        var response2 = await ProductService.GetProductAsync(ProductId);
-        if (response2.ResponseMessage.IsSuccessStatusCode)
-        {
-            // AttributeForCategorizeImagesId = response2.Value.AttributeForCategorizeImagesId;
-            // if (AttributeForCategorizeImagesId == null)
-            // {
-            //     return;
-            // }
-
-            var response3 = await ProductAttributeService.GetAttributeValuesBelongToProductAsync(AttributeForCategorizeImagesId.Value, ProductId);
-            if (response3.ResponseMessage.IsSuccessStatusCode)
-            {
-                attributeValues = response3.GetContent().ToList();
-            }
-        }
+        // var response3 = await ProductAttributeService.GetAttributeValuesBelongToProductAsync(AttributeForCategorizeImagesId.Value, ProductId);
+        // if (response3.ResponseMessage.IsSuccessStatusCode)
+        // {
+        //     attributeValues = response3.GetContent().ToList();
+        // }
 
         foreach (var attributeValue in attributeValues)
         {
@@ -332,7 +315,6 @@ else
     private async Task ResetForm()
     {
         addRequest = new();
-        validationError = string.Empty;
         await InvokeAsync(StateHasChanged);
     }
 }

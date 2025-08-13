@@ -8,8 +8,6 @@ public interface IUploadApi
 {
     [Post("media-service/upload")]
     Task<Response<string>> UploadFileAsync(
-        [Header("accept")] string accept,
-        [Header("Content-Type")] string contentType,
         [Body] MultipartFormDataContent fileContent
     );
 

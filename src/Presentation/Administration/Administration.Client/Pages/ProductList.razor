@@ -13,7 +13,7 @@
 
 <RadzenCard>
     <RadzenStack Gap="8px">
-        <RadzenButton Text="THÊM SẢN PHẨM" ButtonStyle="ButtonStyle.Primary" Click="ShowCreateModal" Shade="Radzen.Shade.Default" Size="Radzen.ButtonSize.Medium" Variant="Radzen.Variant.Flat" />
+        <RadzenButton Text="THÊM SẢN PHẨM" ButtonStyle="ButtonStyle.Primary" Click="@(() => NavigationManager.NavigateTo("/create-edit-product"))" Shade="Radzen.Shade.Default" Size="Radzen.ButtonSize.Medium" Variant="Radzen.Variant.Flat" />
 
         <RadzenRow>
             <RadzenColumn Size="12">
@@ -62,14 +62,14 @@
             <RadzenDataGridColumn TItem="ProductReadModel" Property="Name" Title="Tên" Width="100px" />
             <RadzenDataGridColumn TItem="ProductReadModel" Title="Hành động" Width="240px" Sortable="false" Filterable="false">
                 <Template Context="product">
-                    <RadzenButton Text="Chỉnh sửa" ButtonStyle="ButtonStyle.Warning" Size="ButtonSize.Medium" Variant="Variant.Flat" Click="@(() => ShowEditModal(product))" Style="margin-right: 8px;" />
-                    <RadzenButton Text="Xóa" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Medium" Variant="Variant.Flat" Click="@(() => ShowDeleteModal(product))" Style="margin-right: 8px;" />
+                    <RadzenButton Text="Chỉnh sửa" ButtonStyle="ButtonStyle.Warning" Size="ButtonSize.Small" Variant="Variant.Flat" Click="@(() => NavigationManager.NavigateTo($"create-edit-product/{product.Id}"))" Style="margin-right: 8px;" />
+                    <RadzenButton Text="Xóa" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Variant="Variant.Flat" Click="@(() => ShowDeleteModal(product))" Style="margin-right: 8px;" />
                     @if (!product.IsSimple)
                     {
 
-                        <RadzenButton Text="Các biến thể" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Medium" Variant="Variant.Flat" Click="@(() => NavigationManager.NavigateTo($"/products/{product.Id}/variants"))" Style="margin-right: 8px;" />
+                        <RadzenButton Text="Các biến thể" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small" Variant="Variant.Flat" Click="@(() => NavigationManager.NavigateTo($"/products/{product.Id}/variants"))" Style="margin-right: 8px;" />
                     }
-                    <RadzenButton Text="Ảnh" ButtonStyle="ButtonStyle.Dark" Size="ButtonSize.Medium" Variant="Variant.Flat" Click="@(() => NavigationManager.NavigateTo($"/products/{product.Id}/images"))" />
+                    <RadzenButton Text="Ảnh" ButtonStyle="ButtonStyle.Dark" Size="ButtonSize.Small" Variant="Variant.Flat" Click="@(() => NavigationManager.NavigateTo($"/products/{product.Id}/images"))" />
                 </Template>
             </RadzenDataGridColumn>
         </Columns>
@@ -216,90 +216,6 @@
         else
         {
             NotifService.Error("Xoá thất bại");
-        }
-    }
-
-    private async Task ShowCreateModal()
-    {
-        Product = new();
-        var ok = await DialogService.OpenAsync<CreateEditProductModal>("Thêm sản phẩm",
-            new Dictionary<string, object>
-            {
-                { "Product", Product },
-                { "Categories", categories },
-                { "ProductAttributes", attributes }
-            }, new DialogOptions()
-            {
-                Width = "80%"
-            });
-
-        if (ok == true)
-        {
-            await HandleCreate();
-        }
-    }
-
-    private async Task ShowEditModal(ProductReadModel product)
-    {
-        selectedProductId = product.Id;
-        Product = new CreateUpdateProductRequest
-        {
-            Name = product.Name,
-            Description = product.Description,
-            CategoryIds = product.CategoryIds,
-            Slug = product.Slug,
-            Sku = product.Sku,
-            IsSimple = product.IsSimple,
-            MetaTitle = product.MetaTitle,
-            MetaDescription = product.MetaDescription,
-            MetaKeywords = product.MetaKeywords,
-            BasePrice = product.BasePrice,
-            SalePrice = product.SalePrice,
-            SaleFrom = product.SaleFrom,
-            SaleTo = product.SaleTo
-        };
-        var ok = await DialogService.OpenAsync<CreateEditProductModal>("Chỉnh sửa sản phẩm",
-            new Dictionary<string, object>
-            {
-                { "Product", Product },
-                { "Categories", categories },
-                { "ProductAttributes", attributes }
-            }, new DialogOptions()
-            {
-                Width = "80%"
-            });
-
-        if (ok == true)
-        {
-            await HandleEdit();
-        }
-    }
-
-    private async Task HandleEdit()
-    {
-        var response = await ProductService.UpdateProductAsync(selectedProductId, Product);
-        if (response.ResponseMessage.IsSuccessStatusCode)
-        {
-            NotifService.Success("Chỉnh sửa thành công");
-            await LoadProductsAsync();
-        }
-        else
-        {
-            NotifService.Error("Chỉnh sửa thất bại");
-        }
-    }
-
-    private async Task HandleCreate()
-    {
-        var response = await ProductService.CreateProductAsync(Product);
-        if (response.ResponseMessage.IsSuccessStatusCode)
-        {
-            NotifService.Success("Thêm thành công");
-            await LoadProductsAsync();
-        }
-        else
-        {
-            NotifService.Error("Thêm thất bại");
         }
     }
 

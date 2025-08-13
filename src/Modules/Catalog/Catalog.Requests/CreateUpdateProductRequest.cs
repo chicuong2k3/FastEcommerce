@@ -10,7 +10,7 @@ public class CreateUpdateProductRequest
     public List<Guid> CategoryIds { get; set; }
     public string? Slug { get; set; }
     public string? Sku { get; set; }
-    public bool IsSimple { get; set; }
+    public bool IsSimple { get; set; } = true;
     public string? MetaTitle { get; set; }
     public string? MetaDescription { get; set; }
     public string? MetaKeywords { get; set; }
