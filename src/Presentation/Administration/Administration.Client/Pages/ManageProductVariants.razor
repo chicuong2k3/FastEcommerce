@@ -4,7 +4,7 @@
 @inject IProductAttributeService ProductAttributeService
 @inject IProductService ProductService
 @inject NavigationManager NavigationManager
-@inject NotificationService NotificationService
+@inject INotifService NotifService
 @inject DialogService DialogService
 
 <PageTitle>Quản lý biến thể</PageTitle>
@@ -87,24 +87,24 @@
                     <ChildContent>
                         @if (attributeFilters.TryGetValue(attr.Id, out var filter) && filter.PossibleValues.Any())
                         {
-                            <RadzenDropDown Multiple="true" @bind-Value="@filter.SelectedValues" Data="@filter.PossibleValues" TextProperty="Value" ValueProperty="Id" Placeholder="Chọn giá trị" Change="@(() => GenerateVariants())" Style="width: 100%;" Chips="true" />
+                            <RadzenDropDown Multiple="true" @bind-Value="@filter.SelectedValues" Data="@filter.PossibleValues" Placeholder="Chọn giá trị" Style="width: 100%;" Chips="true" />
                         }
                     </ChildContent>
                 </RadzenFormField>
 
                 <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
-                    <RadzenButton Icon="add" ButtonStyle="ButtonStyle.Primary" Click="@(() => ShowAddProductAttributeValueDialog(attr))" class="rz-border-radius-10" />
+                    <RadzenButton Icon="add" ButtonStyle="ButtonStyle.Primary" Variant="Variant.Flat" Click="@(() => ShowAddProductAttributeValueDialog(attr))" class="rz-border-radius-10" />
                 </RadzenStack>
+
             </RadzenStack>
 
         }
 
+        <RadzenButton Text="Tạo các biến thể" ButtonStyle="ButtonStyle.Primary" Variant="Variant.Flat" Click="@(() => GenerateVariants())" />
+
 
         @if (generatedVariants.Any())
         {
-            <RadzenText TextStyle="TextStyle.Body2" Style="margin-top: 12px;">
-                Biến thể mới
-            </RadzenText>
             <RadzenDataGrid Data="@generatedVariants" TItem="AddVariantRequest" AllowSorting="true" AllowFiltering="false" AllowPaging="false">
                 <Columns>
                     <RadzenDataGridColumn TItem="AddVariantRequest" Title="Biến thể" Sortable="false">
@@ -147,8 +147,7 @@
             </RadzenDataGrid>
         }
         <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="8px" Style="margin-top: 8px;">
-            <RadzenButton Text="Đóng" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Flat" Click="@(() => NavigationManager.NavigateTo($"/products"))" />
-            <RadzenButton Text="Lưu" ButtonStyle="ButtonStyle.Primary" Variant="Variant.Flat" Click="Submit" />
+            <RadzenButton Text="Lưu các biến thể" ButtonStyle="ButtonStyle.Primary" Variant="Variant.Flat" Click="Submit" />
         </RadzenStack>
     </RadzenStack>
 </RadzenCard>
@@ -166,7 +165,6 @@
     private Dictionary<Guid, AttributeFilter> attributeFilters = new();
     private AddVariantRequest commonVariant = new();
     private string priceValidationError = string.Empty;
-    private string quantityValidationError = string.Empty;
     private string salePriceValidationError = string.Empty;
     private List<AddVariantRequest> generatedVariants = new();
     private bool showEditModal = false;
@@ -194,11 +192,6 @@
                     .Select(av => av.AttributeValue)
                     .ToList();
             }
-
-            // if (attributeFilters[attr.Id].PossibleValues.Count == 0)
-            // {
-            //     attributeFilters[attr.Id].PossibleValues.Add("Chưa có giá trị");
-            // }
         }
     }
 
@@ -207,14 +200,13 @@
         var response = await ProductAttributeService.GetProductAttributesAsync();
         if (response.ResponseMessage.IsSuccessStatusCode)
         {
-            attributes = response.GetContent().ToList();
+            attributes = response.GetContent().Where(a => a.IsOption).ToList();
         }
     }
 
     private void GenerateVariants()
     {
         priceValidationError = string.Empty;
-        quantityValidationError = string.Empty;
         salePriceValidationError = string.Empty;
 
         bool isValid = true;
@@ -236,28 +228,28 @@
             return;
         }
 
-        // var existingNewVariants = generatedVariants.ToDictionary(
-        //     v => string.Join("|", v.AttributeValueIds.OrderBy(id => id)),
-        //     v => v
-        // );
+        var existingNewVariants = generatedVariants.ToDictionary(
+            v => string.Join("|", v.ProductAttributeValuePairs.Select(pair => pair.ProductAttributeValue).OrderBy(val => val)),
+            v => v
+        );
 
-        // generatedVariants.Clear();
-        // var combinations = GetAttributeCombinations();
-        // foreach (var combo in combinations)
-        // {
-        //     var attributeValueIds = combo.Values.OrderBy(id => id).ToList();
-        //     var key = string.Join("|", attributeValueIds);
-        //     var variant = existingNewVariants.ContainsKey(key)
-        //         ? existingNewVariants[key]
-        //         : new AddVariantRequest
-        //         {
-        //             BasePrice = commonVariant.BasePrice,
-        //             SalePrice = commonVariant.SalePrice,
-        //             SaleFrom = commonVariant.SaleFrom,
-        //             SaleTo = commonVariant.SaleTo
-        //         };
-        //     generatedVariants.Add(variant);
-        // }
+        generatedVariants.Clear();
+        var combinations = GetAttributeCombinations();
+        foreach (var combo in combinations)
+        {
+            var attributeValues = combo.Values.OrderBy(val => val).ToList();
+            var key = string.Join("|", attributeValues);
+            var variant = existingNewVariants.ContainsKey(key)
+                ? existingNewVariants[key]
+                : new AddVariantRequest
+                {
+                    BasePrice = commonVariant.BasePrice,
+                    SalePrice = commonVariant.SalePrice,
+                    SaleFrom = commonVariant.SaleFrom,
+                    SaleTo = commonVariant.SaleTo
+                };
+            generatedVariants.Add(variant);
+        }
     }
 
     private List<Dictionary<Guid, string>> GetAttributeCombinations()
@@ -277,41 +269,24 @@
             }
             combinations = newCombinations;
         }
+
         return combinations;
     }
 
     private IEnumerable<string> GetVariantDisplay(ProductVariantReadModel variant)
     {
-        // var displayParts = variant.AttributeValues
-        //     .OrderBy(av => av.AttributeName)
-        //     .Select(av => $"{av.AttributeName}: {av.AttributeValue}");
-        // return displayParts;
-        return [];
+        var displayParts = variant.ProductAttributeValuePairs
+            .OrderBy(pair => pair.AttributeName)
+            .Select(av => $"{av.AttributeName}: {av.AttributeValue}");
+        return displayParts;
     }
 
     private IEnumerable<string> GetVariantDisplay(AddVariantRequest variant)
     {
-        // var displayParts = variant.AttributeValueIds
-        //     .Select(id => GetAttributeValueInfo(id))
-        //     .Where(info => info.HasValue)
-        //     .OrderBy(info => info!.Value.AttributeName)
-        //     .Select(info => $"{info!.Value.AttributeName}: {info.Value.AttributeValue}");
-        // return displayParts;
-        return [];
-    }
-
-    private (string AttributeName, string AttributeValue)? GetAttributeValueInfo(string val)
-    {
-        foreach (var attr in attributes)
-        {
-            var value = attributeFilters[attr.Id].PossibleValues
-                .FirstOrDefault(v => v == val);
-            if (!string.IsNullOrEmpty(value))
-            {
-                return (attr.Name, value);
-            }
-        }
-        return null;
+        var displayParts = variant.ProductAttributeValuePairs
+            .OrderBy(pair => pair.ProductAttributeId)
+            .Select(pair => $"{pair.ProductAttributeId}: {pair.ProductAttributeValue}");
+        return displayParts;
     }
 
     private async Task ShowAddProductAttributeValueDialog(ProductAttributeReadModel productAttribute)
@@ -325,23 +300,15 @@
         if (ok == true)
         {
             var response = await ProductAttributeService.AddValueToAttributeAsync(productAttribute.Id, addValueForProductAttributeRequest);
-            if (!response.ResponseMessage.IsSuccessStatusCode)
+            if (response.ResponseMessage.IsSuccessStatusCode)
             {
-                NotificationService.Notify(new NotificationMessage
-                {
-                    Severity = NotificationSeverity.Error,
-                    Summary = $"Thêm thất bại",
-                    Duration = 3000
-                });
+                attributeFilters[productAttribute.Id].PossibleValues.Add(addValueForProductAttributeRequest.ProductAttributeValue);
+
+                NotifService.Success("Thêm thành công");
             }
             else
             {
-                NotificationService.Notify(new NotificationMessage
-                {
-                    Severity = NotificationSeverity.Success,
-                    Summary = $"Thêm thành công",
-                    Duration = 3000
-                });
+                NotifService.Error("Thêm thất bại");
             }
         }
     }
@@ -354,31 +321,26 @@
 
     private void SaveEditedVariant()
     {
-        // var index = generatedVariants.FindIndex(v =>
-        //     v.AttributeValueIds.OrderBy(id => id)
-        //         .SequenceEqual(editingVariant.AttributeValueIds.OrderBy(id => id)));
-        // if (index >= 0)
-        // {
-        //     generatedVariants[index] = new AddVariantRequest
-        //     {
-        //         BasePrice = editingVariant.BasePrice,
-        //         SalePrice = editingVariant.SalePrice,
-        //         SaleFrom = editingVariant.SaleFrom,
-        //         SaleTo = editingVariant.SaleTo
-        //     };
-        // }
+        var index = generatedVariants.FindIndex(v =>
+            v.ProductAttributeValuePairs.OrderBy(id => id)
+                .SequenceEqual(editingVariant.ProductAttributeValuePairs.OrderBy(id => id)));
+        if (index >= 0)
+        {
+            generatedVariants[index] = new AddVariantRequest
+            {
+                BasePrice = editingVariant.BasePrice,
+                SalePrice = editingVariant.SalePrice,
+                SaleFrom = editingVariant.SaleFrom,
+                SaleTo = editingVariant.SaleTo
+            };
+        }
     }
 
     private async Task Submit()
     {
         if (!generatedVariants.Any())
         {
-            NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Error,
-                Summary = "Vui lòng chọn ít nhất một giá trị thuộc tính",
-                Duration = 3000
-            });
+            NotifService.Error("Vui lòng chọn ít nhất một giá trị thuộc tính");
             return;
         }
 
@@ -387,21 +349,11 @@
             var response = await ProductService.AddVariantAsync(ProductId, variant);
             if (!response.ResponseMessage.IsSuccessStatusCode)
             {
-                NotificationService.Notify(new NotificationMessage
-                {
-                    Severity = NotificationSeverity.Error,
-                    Summary = $"Thêm thất bại: {string.Join(",", GetVariantDisplay(variant))}",
-                    Duration = 3000
-                });
+                NotifService.Error($"Thêm thất bại: {string.Join(",", GetVariantDisplay(variant))}");
             }
             else
             {
-                NotificationService.Notify(new NotificationMessage
-                {
-                    Severity = NotificationSeverity.Success,
-                    Summary = $"Thêm thành công: {string.Join(",", GetVariantDisplay(variant))}",
-                    Duration = 3000
-                });
+                NotifService.Success("Thêm thành công");
             }
         }
 

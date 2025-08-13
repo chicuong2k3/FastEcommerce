@@ -16,28 +16,24 @@ internal sealed class ProductVariantConfiguration : IEntityTypeConfiguration<Pro
         builder.Property(e => e.Sku)
             .HasMaxLength(100);
 
-        builder.OwnsOne(p => p.Price, price =>
+        builder.OwnsOne(p => p.BasePrice, basePrice =>
         {
-            price.OwnsOne(x => x.BasePrice, basePrice =>
-            {
-                basePrice.Property(m => m.Amount)
-                             .HasColumnName("BasePrice")
-                             .IsRequired();
-            });
+            basePrice.Property(m => m.Amount)
+                             .HasColumnName("BasePrice");
+        });
 
-            price.OwnsOne(x => x.SalePrice, salePrice =>
-            {
-                salePrice.Property(m => m.Amount)
+        builder.OwnsOne(p => p.SalePrice, salePrice =>
+        {
+            salePrice.Property(m => m.Amount)
                              .HasColumnName("SalePrice");
-            });
+        });
 
-            price.OwnsOne(x => x.SaleEffectiveRange, range =>
-            {
-                range.Property(r => r.From)
+        builder.OwnsOne(p => p.SaleEffectiveRange, range =>
+        {
+            range.Property(r => r.From)
                          .HasColumnName("SaleFrom");
-                range.Property(r => r.To)
-                     .HasColumnName("SaleTo");
-            });
+            range.Property(r => r.To)
+                 .HasColumnName("SaleTo");
         });
 
         builder.HasMany(pv => pv.AttributeValues)

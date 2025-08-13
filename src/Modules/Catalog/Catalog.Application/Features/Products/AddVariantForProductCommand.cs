@@ -1,6 +1,4 @@
-﻿using Pricing.Core.ValueObjects;
-
-namespace Catalog.Application.Features.Products;
+﻿namespace Catalog.Application.Features.Products;
 
 public sealed record AddVariantForProductCommand(
     Guid ProductId,
@@ -15,7 +13,8 @@ public sealed record AddVariantForProductCommand(
 
 internal sealed class AddVariantForProductCommandHandler(
     IProductRepository productRepository,
-    IProductAttributeRepository productAttributeRepository)
+    IProductAttributeRepository productAttributeRepository,
+    ProductService productService)
     : ICommandHandler<AddVariantForProductCommand>
 {
     public async Task<Result> Handle(AddVariantForProductCommand command, CancellationToken cancellationToken)
@@ -28,12 +27,13 @@ internal sealed class AddVariantForProductCommandHandler(
         var basePrice = Money.FromDecimal(command.BasePrice);
         var salePrice = command.SalePrice != null ? Money.FromDecimal(command.SalePrice.Value) : null;
         var saleEffectiveRange = new DateTimeRange(command.SaleFrom, command.SaleTo);
-        var price = new ProductPrice(basePrice, salePrice, saleEffectiveRange);
-
         var addVariantResult = await product.AddVariantAsync(command.Sku,
-                                                       price,
+                                                       basePrice,
+                                                       salePrice,
+                                                       saleEffectiveRange,
                                                        command.ProductAttributeValuePairs,
-                                                       productAttributeRepository);
+                                                       productAttributeRepository,
+                                                       productService);
         if (addVariantResult.IsFailed)
             return Result.Fail(addVariantResult.Errors);
 

@@ -1,4 +1,4 @@
-﻿namespace Pricing.Core.ValueObjects;
+﻿namespace Catalog.Core.ValueObjects;
 
 public record DateTimeRange : ValueObject
 {

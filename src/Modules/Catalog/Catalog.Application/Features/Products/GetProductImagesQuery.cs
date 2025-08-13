@@ -1,6 +1,4 @@
-﻿using MongoDB.Driver;
-
-namespace Catalog.Application.Features.Products;
+﻿namespace Catalog.Application.Features.Products;
 
 public record GetProductImagesQuery(Guid ProductId, Guid? ProductAttributeId, string? ProductAttributeValue)
     : IQuery<List<ProductImageReadModel>>;

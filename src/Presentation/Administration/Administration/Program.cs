@@ -27,7 +27,7 @@ builder.Services.AddSharedServices();
 builder.Services.AddBlazorAutoBridge((sp, client) =>
 {
     client.BaseAddress = new Uri("https://localhost:20001/");
-    client.Timeout = TimeSpan.FromSeconds(5);
+    client.Timeout = TimeSpan.FromSeconds(350);
 });
 
 JwtSecurityTokenHandler.DefaultMapInboundClaims = false;

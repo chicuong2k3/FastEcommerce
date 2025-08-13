@@ -1,11 +1,7 @@
-﻿using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
-
-namespace Catalog.ReadModels;
+﻿namespace Catalog.ReadModels;
 
 public class ProductVariantReadModel
 {
-    [BsonRepresentation(BsonType.String)]
     public Guid Id { get; set; }
     public string? Sku { get; set; }
     public List<AttributeValueReadModel> ProductAttributeValuePairs { get; set; } = [];

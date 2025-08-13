@@ -1,6 +1,4 @@
-﻿using Pricing.Core.ValueObjects;
-
-namespace Catalog.Application.Features.Products;
+﻿namespace Catalog.Application.Features.Products;
 
 public record UpdateProductCommand(
     Guid ProductId,
@@ -17,7 +15,8 @@ public record UpdateProductCommand(
 
 internal class UpdateProductCommandHandler(
     IProductRepository productRepository,
-    ICategoryRepository categoryRepository)
+    ICategoryRepository categoryRepository,
+    ProductService productService)
     : ICommandHandler<UpdateProductCommand, ProductReadModel>
 {
     public async Task<Result<ProductReadModel>> Handle(UpdateProductCommand command, CancellationToken cancellationToken)
@@ -53,11 +52,20 @@ internal class UpdateProductCommandHandler(
         }
 
 
-        var basePrice = command.BasePrice != null ? Money.FromDecimal(command.BasePrice.Value) : null;
-        var salePrice = command.SalePrice != null ? Money.FromDecimal(command.SalePrice.Value) : null;
+        var basePrice = Money.FromDecimal(command.BasePrice);
+        var salePrice = Money.FromDecimal(command.SalePrice);
         var saleEffectiveRange = new DateTimeRange(command.SaleFrom, command.SaleTo);
-        var price = basePrice != null ? new ProductPrice(basePrice, salePrice, saleEffectiveRange) : new(null, null, new(null, null));
-        var result = product.Update(command.Name, command.Description, command.BrandId, categories, command.Slug, command.Sku, price);
+        var result = product.Update(
+            command.Name,
+            command.Description,
+            command.BrandId,
+            categories,
+            command.Slug,
+            command.Sku,
+            basePrice,
+            salePrice,
+            saleEffectiveRange,
+            productService);
 
         if (result.IsFailed)
             return result;

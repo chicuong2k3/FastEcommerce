@@ -112,7 +112,7 @@
     [Parameter]
     public List<CategoryReadModel> Categories { get; set; } = new();
     [Parameter]
-    public CreateUpdateCategoryRequest Category { get; set; }
+    public CreateUpdateCategoryRequest Category { get; set; } = new();
 
     private void Submit()
     {

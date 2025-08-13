@@ -1,5 +1,4 @@
-﻿using MongoDB.Driver;
-namespace Catalog.Application.Features.Products;
+﻿namespace Catalog.Application.Features.Products;
 
 public sealed record GetProductByIdQuery(Guid Id) : IQuery<ProductReadModel>;
 

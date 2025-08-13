@@ -1,9 +1,15 @@
-﻿namespace Catalog.Core.Entities;
+﻿using Catalog.Core.Services;
+
+namespace Catalog.Core.Entities;
 
 public class ProductVariant : Entity<Guid>
 {
     public string? Sku { get; private set; }
-    public ProductPrice Price { get; private set; }
+
+    public Money? BasePrice { get; private set; }
+    public Money? SalePrice { get; private set; }
+    public DateTimeRange? SaleEffectiveRange { get; private set; }
+
     private readonly List<ProductAttributeValue> _attributeValues = [];
     public IReadOnlyCollection<ProductAttributeValue> AttributeValues => _attributeValues.AsReadOnly();
 
@@ -13,22 +19,31 @@ public class ProductVariant : Entity<Guid>
 
     private ProductVariant(
         string? sku,
-        ProductPrice price)
+        Money basePrice,
+        Money? salePrice,
+        DateTimeRange? saleEffectiveRange)
     {
         Id = Guid.NewGuid();
         Sku = sku;
-        Price = price;
+        BasePrice = basePrice;
+        SalePrice = salePrice;
+        SaleEffectiveRange = saleEffectiveRange;
     }
 
-    public static Result<ProductVariant> TryCreate(string? sku, ProductPrice price)
+    public static Result<ProductVariant> TryCreate(
+        string? sku,
+        Money basePrice,
+        Money? salePrice,
+        DateTimeRange? saleEffectiveRange,
+        ProductService productService)
     {
-        var validationResult = price.Validate();
+        var validationResult = productService.ValidateProductPrice(basePrice, salePrice, saleEffectiveRange);
         if (validationResult.IsFailed)
         {
             return validationResult;
         }
 
-        return new ProductVariant(sku, price);
+        return new ProductVariant(sku, basePrice, salePrice, saleEffectiveRange);
     }
 
     public Result AddAttribute(ProductAttributeValue attributeValue)

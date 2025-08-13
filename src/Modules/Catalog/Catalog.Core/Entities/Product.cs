@@ -1,4 +1,4 @@
-﻿
+﻿using Catalog.Core.Services;
 
 namespace Catalog.Core.Entities;
 
@@ -18,7 +18,10 @@ public sealed class Product : AggregateRoot<Guid>
     public bool IsSimple { get; private set; }
     public SeoMeta? SeoMeta { get; private set; }
     public string? Sku { get; private set; }
-    public ProductPrice Price { get; private set; }
+
+    public Money? BasePrice { get; private set; }
+    public Money? SalePrice { get; private set; }
+    public DateTimeRange? SaleEffectiveRange { get; private set; }
 
     private readonly List<ProductImage> _images = [];
     private readonly List<ProductVariant> _variants = [];
@@ -37,7 +40,9 @@ public sealed class Product : AggregateRoot<Guid>
         bool isSimple,
         List<Category> categories,
         string? sku,
-        ProductPrice price,
+        Money? basePrice,
+        Money? salePrice,
+        DateTimeRange? saleEffectiveRange,
         IEnumerable<(Guid ProductAttributeId, string ProductAttributeValue)> productAttributeValuePairs)
     {
         Id = Guid.NewGuid();
@@ -49,7 +54,9 @@ public sealed class Product : AggregateRoot<Guid>
         IsSimple = isSimple;
         _categories = categories;
         Sku = sku;
-        Price = price;
+        BasePrice = basePrice;
+        SalePrice = salePrice;
+        SaleEffectiveRange = saleEffectiveRange;
         _productAttributeValues = productAttributeValuePairs
             .Select(pair => new ProductAttributeValue(pair.ProductAttributeId, pair.ProductAttributeValue))
             .ToList();
@@ -65,16 +72,19 @@ public sealed class Product : AggregateRoot<Guid>
         bool isSimple,
         List<Category> categories,
         string? sku,
-        ProductPrice price,
+        Money? basePrice,
+        Money? salePrice,
+        DateTimeRange? saleEffectiveRange,
         IEnumerable<(Guid ProductAttributeId, string ProductAttributeValue)> productAttributeValuePairs,
-        IProductAttributeRepository productAttributeRepository)
+        IProductAttributeRepository productAttributeRepository,
+        ProductService productService)
     {
         if (!isSimple && !string.IsNullOrEmpty(sku))
         {
             return Result.Fail("Sku must be null when product is not simple");
         }
 
-        if (price.BasePrice != null)
+        if (basePrice != null)
         {
             if (!isSimple)
             {
@@ -82,11 +92,9 @@ public sealed class Product : AggregateRoot<Guid>
             }
         }
 
-        var validationResult = price.Validate();
-        if (validationResult.IsFailed)
-        {
-            return validationResult;
-        }
+        var priceCreationResult = productService.ValidateProductPrice(basePrice, salePrice, saleEffectiveRange);
+        if (priceCreationResult.IsFailed)
+            return Result.Fail(priceCreationResult.Errors);
 
         foreach (var pair in productAttributeValuePairs)
         {
@@ -112,16 +120,30 @@ public sealed class Product : AggregateRoot<Guid>
             }
         }
 
-        var product = new Product(name, description, brandId, slug, isSimple, categories, sku, price, productAttributeValuePairs);
+        var product = new Product(
+            name,
+            description,
+            brandId,
+            slug,
+            isSimple,
+            categories,
+            sku,
+            basePrice,
+            salePrice,
+            saleEffectiveRange,
+            productAttributeValuePairs);
 
         return product;
     }
 
     public async Task<Result> AddVariantAsync(
         string? sku,
-        ProductPrice price,
+        Money basePrice,
+        Money? salePrice,
+        DateTimeRange? saleEffectiveRange,
         IEnumerable<(Guid ProductAttributeId, string ProductAttributeValue)> productAttributeValuePairs,
-        IProductAttributeRepository productAttributeRepository)
+        IProductAttributeRepository productAttributeRepository,
+        ProductService productService)
     {
         if (IsSimple)
             return Result.Fail("Cannot add variant for this type of product.");
@@ -132,7 +154,7 @@ public sealed class Product : AggregateRoot<Guid>
             return Result.Fail(new ConflictError("Variant with the same Sku already exists."));
         }
 
-        var result = ProductVariant.TryCreate(sku, price);
+        var result = ProductVariant.TryCreate(sku, basePrice, salePrice, saleEffectiveRange, productService);
         if (result.IsFailed)
         {
             return Result.Fail(result.Errors);
@@ -204,7 +226,10 @@ public sealed class Product : AggregateRoot<Guid>
         List<Category> categories,
         string? slug,
         string? sku,
-        ProductPrice price
+        Money? basePrice,
+        Money? salePrice,
+        DateTimeRange? saleEffectiveRange,
+        ProductService productService
     )
     {
         if (!IsSimple && !string.IsNullOrEmpty(sku))
@@ -222,24 +247,26 @@ public sealed class Product : AggregateRoot<Guid>
             BrandId = brandId;
         }
 
-        if (price != null)
+        if (basePrice != null)
         {
             if (!IsSimple)
             {
                 return Result.Fail("Base price must be null when product is not simple");
             }
 
-            var validationResult = price.Validate();
-            if (validationResult.IsFailed)
-            {
-                return validationResult;
-            }
+            var priceCreationResult = productService.ValidateProductPrice(basePrice, salePrice, saleEffectiveRange);
+            if (priceCreationResult.IsFailed)
+                return Result.Fail(priceCreationResult.Errors);
+
+            BasePrice = basePrice;
+            SalePrice = salePrice;
+            SaleEffectiveRange = saleEffectiveRange;
         }
 
         Name = name;
         Slug = string.IsNullOrEmpty(slug) ? SlugHelper.GenerateSlug(Name) : slug;
         Sku = sku;
-        Price = price;
+
         _categories.Clear();
         _categories.AddRange(categories);
 

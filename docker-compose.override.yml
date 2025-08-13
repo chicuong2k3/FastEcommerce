@@ -100,7 +100,7 @@ services:
       - RabbitMqOptions__Username=guest
       - RabbitMqOptions__Password=guest
     ports:
-      - "6000:8080"
+      - "12000:8080"
     volumes:
       - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
       - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro

@@ -18,10 +18,10 @@ public static class ProductMapping
             MetaDescription = product.SeoMeta?.Description,
             MetaKeywords = product.SeoMeta?.Keywords,
             Variants = product.Variants.Select(v => v.ToReadModel()).ToList(),
-            BasePrice = product.Price.BasePrice?.Amount,
-            SalePrice = product.Price.SalePrice?.Amount,
-            SaleFrom = product.Price.SaleEffectiveRange?.From,
-            SaleTo = product.Price.SaleEffectiveRange?.To,
+            BasePrice = product.BasePrice?.Amount,
+            SalePrice = product.SalePrice?.Amount,
+            SaleFrom = product.SaleEffectiveRange?.From,
+            SaleTo = product.SaleEffectiveRange?.To,
         };
     }
 
@@ -32,10 +32,10 @@ public static class ProductMapping
             Id = variant.Id,
             Sku = variant.Sku,
             ProductAttributeValuePairs = variant.AttributeValues.Select(av => av.ToReadModel()).ToList(),
-            BasePrice = variant.Price.BasePrice?.Amount,
-            SalePrice = variant.Price.SalePrice?.Amount,
-            SaleFrom = variant.Price.SaleEffectiveRange?.From,
-            SaleTo = variant.Price.SaleEffectiveRange?.To,
+            BasePrice = variant.BasePrice?.Amount,
+            SalePrice = variant.SalePrice?.Amount,
+            SaleFrom = variant.SaleEffectiveRange?.From,
+            SaleTo = variant.SaleEffectiveRange?.To,
         };
     }
 }

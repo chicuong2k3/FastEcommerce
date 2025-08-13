@@ -1,4 +1,5 @@
-﻿using FluentValidation;
+﻿using Administration.Client.Services;
+using FluentValidation;
 using Radzen;
 
 namespace Administration.Client;
@@ -9,5 +10,7 @@ public static class ConfigureSharedServices
     {
         services.AddRadzenComponents();
         services.AddValidatorsFromAssembly(Catalog.Requests.AssemblyInfo.Ref);
+
+        services.AddScoped<INotifService, NotifService>();
     }
 }

@@ -1,15 +1,10 @@
 @page "/categories"
 
 @inject ICategoryService CategoryService
-@inject NotificationService NotificationService
+@inject INotifService NotifService
 @inject DialogService DialogService
-@* 
-@inherits TimeWarp.State.TimeWarpStateComponent *@
-
 
 <PageTitle>Quản lý danh mục</PageTitle>
-@* 
-@CurrentRenderMode *@
 
 <RadzenCard Visible="true" Variant="Radzen.Variant.Filled">
     <RadzenStack>
@@ -185,22 +180,11 @@
         {
             categories = [.. categories, response.GetContent()];
             categoryHierarchyCache[response.GetContent().Id] = await GetCategoryHierarchy(response.GetContent());
-            NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Success,
-                Summary = "Tạo thành công",
-                Duration = 3000
-            });
+            NotifService.Success("Thêm thành công");
         }
         else
         {
-            Console.WriteLine(response);
-            NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Error,
-                Summary = "Tạo thất bại",
-                Duration = 3000
-            });
+            NotifService.Error("Thêm thất bại");
         }
     }
 
@@ -217,21 +201,11 @@
             }
 
             categories = updatedCategories;
-            NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Success,
-                Summary = "Chỉnh sửa thành công",
-                Duration = 3000
-            });
+            NotifService.Success("Chỉnh sửa thành công");
         }
         else
         {
-            NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Error,
-                Summary = "Chỉnh sửa thất bại",
-                Duration = 3000
-            });
+            NotifService.Error("Chỉnh sửa thất bại");
         }
     }
 
@@ -241,21 +215,11 @@
         if (response.ResponseMessage.IsSuccessStatusCode)
         {
             categories = categories.Where(c => c.Id != selectedForDeleteCategory.Id).ToList();
-            NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Success,
-                Summary = "Xoá thành công",
-                Duration = 3000
-            });
+            NotifService.Success("Xóa thành công");
         }
         else
         {
-            NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Error,
-                Summary = "Xoá thất bại",
-                Duration = 3000
-            });
+            NotifService.Error("Xóa thất bại");
         }
     }
 }

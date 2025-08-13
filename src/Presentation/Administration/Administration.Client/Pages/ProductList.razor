@@ -3,7 +3,7 @@
 @inject IProductService ProductService
 @inject IProductAttributeService ProductAttributeService
 @inject ICategoryService CategoryService
-@inject NotificationService NotificationService
+@inject INotifService NotifService
 @inject DialogService DialogService
 @inject NavigationManager NavigationManager
 
@@ -107,7 +107,6 @@
     private List<ProductReadModel> products = new();
     private Guid selectedProductId;
     private ProductReadModel selectedForDeleteProduct = new();
-    private bool isEditMode = false;
     private CreateUpdateProductRequest Product = new();
     private List<ProductVariantReadModel> variants = new();
     private List<ProductAttributeReadModel> attributes = new();
@@ -211,22 +210,12 @@
         var response = await ProductService.DeleteProductAsync(selectedForDeleteProduct.Id);
         if (response.ResponseMessage.IsSuccessStatusCode)
         {
-            NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Success,
-                Summary = "Xoá thành công",
-                Duration = 3000
-            });
+            NotifService.Success("Xoá thành công");
             await LoadProductsAsync();
         }
         else
         {
-            NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Error,
-                Summary = "Xoá thất bại",
-                Duration = 3000
-            });
+            NotifService.Error("Xoá thất bại");
         }
     }
 
@@ -291,22 +280,12 @@
         var response = await ProductService.UpdateProductAsync(selectedProductId, Product);
         if (response.ResponseMessage.IsSuccessStatusCode)
         {
-            NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Success,
-                Summary = "Cập nhật thành công",
-                Duration = 3000
-            });
+            NotifService.Success("Chỉnh sửa thành công");
             await LoadProductsAsync();
         }
         else
         {
-            NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Error,
-                Summary = "Cập nhật thất bại",
-                Duration = 3000
-            });
+            NotifService.Error("Chỉnh sửa thất bại");
         }
     }
 
@@ -315,22 +294,12 @@
         var response = await ProductService.CreateProductAsync(Product);
         if (response.ResponseMessage.IsSuccessStatusCode)
         {
-            NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Success,
-                Summary = "Thêm mới thành công",
-                Duration = 3000
-            });
+            NotifService.Success("Thêm thành công");
             await LoadProductsAsync();
         }
         else
         {
-            NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Error,
-                Summary = "Thêm mới thất bại",
-                Duration = 3000
-            });
+            NotifService.Error("Thêm thất bại");
         }
     }
 

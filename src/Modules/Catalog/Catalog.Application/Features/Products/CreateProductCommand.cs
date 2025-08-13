@@ -1,6 +1,4 @@
-﻿using Pricing.Core.ValueObjects;
-
-namespace Catalog.Application.Features.Products;
+﻿namespace Catalog.Application.Features.Products;
 
 public sealed record CreateProductCommand(
     string Name,
@@ -24,7 +22,8 @@ public sealed record CreateProductCommand(
 internal sealed class CreateProductCommandHandler(
     IProductRepository productRepository,
     ICategoryRepository categoryRepository,
-    IProductAttributeRepository productAttributeRepository)
+    IProductAttributeRepository productAttributeRepository,
+    ProductService productService)
     : ICommandHandler<CreateProductCommand, ProductReadModel>
 {
     public async Task<Result<ProductReadModel>> Handle(CreateProductCommand command, CancellationToken cancellationToken)
@@ -65,7 +64,7 @@ internal sealed class CreateProductCommandHandler(
         var basePrice = command.BasePrice != null ? Money.FromDecimal(command.BasePrice.Value) : null;
         var salePrice = command.SalePrice != null ? Money.FromDecimal(command.SalePrice.Value) : null;
         var saleEffectiveRange = new DateTimeRange(command.SaleFrom, command.SaleTo);
-        var price = new ProductPrice(basePrice, salePrice, saleEffectiveRange);
+
         var res = await Product.CreateAsync(
             command.Name,
             command.Description,
@@ -74,9 +73,12 @@ internal sealed class CreateProductCommandHandler(
             command.IsSimple,
             categories,
             command.Sku,
-            price,
+            basePrice,
+            salePrice,
+            saleEffectiveRange,
             command.ProductAttributeValuePairs,
-            productAttributeRepository
+            productAttributeRepository,
+            productService
             );
 
         if (res.IsFailed)
