@@ -38,8 +38,8 @@
             <RadzenDataGridColumn TItem="CategoryReadModel" Title="Hành động" Sortable="false" Filterable="false">
                 <Template Context="category">
                     <RadzenStack Orientation="Orientation.Horizontal" Gap="8px">
-                        <RadzenButton Text="Chỉnh sửa" ButtonStyle="ButtonStyle.Warning" Size="ButtonSize.Medium" Variant="Variant.Flat" Click="@(() => ShowEditModal(category))" />
-                        <RadzenButton Text="Xóa" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Medium" Variant="Variant.Flat" Click="@(() => ShowDeleteModal(category))" />
+                        <RadzenButton Text="Chỉnh sửa" ButtonStyle="ButtonStyle.Warning" Size="ButtonSize.Small" Variant="Variant.Flat" Click="@(() => ShowEditModal(category))" />
+                        <RadzenButton Text="Xóa" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Variant="Variant.Flat" Click="@(() => ShowDeleteModal(category))" />
                     </RadzenStack>
                 </Template>
             </RadzenDataGridColumn>

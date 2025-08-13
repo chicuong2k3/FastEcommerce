@@ -4,27 +4,20 @@
 @inject IProductAttributeService ProductAttributeService
 @inject IProductService ProductService
 @inject IUploadService UploadService
-@inject NotificationService NotificationService
+@inject INotifService NotifService
 @inject DialogService DialogService
 
 <PageTitle>Quản lý ảnh sản phẩm</PageTitle>
 
-@if (AttributeForCategorizeImagesId == null)
+
+@if (attributeValues.Any())
 {
-    <RadzenText TextStyle="TextStyle.H5">
-        Vui lòng chỉ định thuộc tính để phân loại ảnh.
-    </RadzenText>
-}
-else
-{
-    if (attributeValues.Any())
-    {
-        <RadzenCard>
-            <RadzenStack>
-                <RadzenText TextStyle="TextStyle.H5">
-                    Thêm ảnh sản phẩm
-                </RadzenText>
-                @* <RadzenFormField Text="Giá trị thuộc tính" Variant="Variant.Outlined">
+    <RadzenCard>
+        <RadzenStack>
+            <RadzenText TextStyle="TextStyle.H5">
+                Thêm ảnh sản phẩm
+            </RadzenText>
+            @* <RadzenFormField Text="Giá trị thuộc tính" Variant="Variant.Outlined">
                     <ChildContent>
                         <RadzenDropDown @bind-Value="@addRequest.AttributeValueId" Data="@attributeValues" TextProperty="AttributeValue" ValueProperty="ProductAttributeValueId" Placeholder="Chọn giá trị" Style="width: 100%;" Disabled="@(attributeValues.Count == 0)" />
                     </ChildContent>
@@ -32,31 +25,31 @@ else
                         <RadzenLabel Text="@validationError" Style="color: red;" Visible="@(!string.IsNullOrEmpty(validationError))" />
                     </Helper>
                 </RadzenFormField> *@
-                <RadzenFormField Text="Ảnh" Variant="Variant.Outlined">
-                    <ChildContent>
-                        <DragAndDropFileUpload Disabled="@isUploading" Multiple="true" Accept="images/*" Url="upload/multiple" />
-                    </ChildContent>
-                </RadzenFormField>
-                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="8px" Style="margin-top: 8px;">
-                    <RadzenButton Text="Thêm ảnh" ButtonStyle="ButtonStyle.Primary" Variant="Variant.Flat" Click="@SubmitAddImages" Disabled="@(isUploading || isLoading)" />
-                </RadzenStack>
+            <RadzenFormField Text="Ảnh" Variant="Variant.Outlined">
+                <ChildContent>
+                    <DragAndDropFileUpload Disabled="@isUploading" Multiple="true" Accept="images/*" Url="upload/multiple" />
+                </ChildContent>
+            </RadzenFormField>
+            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="8px" Style="margin-top: 8px;">
+                <RadzenButton Text="Thêm ảnh" ButtonStyle="ButtonStyle.Primary" Variant="Variant.Flat" Click="@SubmitAddImages" Disabled="@(isUploading || isLoading)" />
             </RadzenStack>
-        </RadzenCard>
+        </RadzenStack>
+    </RadzenCard>
 
-        <!-- Existing Images -->
-        <RadzenCard Style="margin: 8px 0;">
-            <RadzenStack>
-                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-                    <RadzenText TextStyle="TextStyle.H5">
-                        Danh sách ảnh
-                    </RadzenText>
-                    <RadzenButton Text="Xoá ảnh đã chọn" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="ShowDeleteModal" Disabled="@(!selectedImageUrlsDict.Any(kvp => kvp.Value.Any()))" />
-                </RadzenStack>
-                @if (imagesDict.Any())
+    <!-- Existing Images -->
+    <RadzenCard Style="margin: 8px 0;">
+        <RadzenStack>
+            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                <RadzenText TextStyle="TextStyle.H5">
+                    Danh sách ảnh
+                </RadzenText>
+                <RadzenButton Text="Xoá ảnh đã chọn" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="ShowDeleteModal" Disabled="@(!selectedImageUrlsDict.Any(kvp => kvp.Value.Any()))" />
+            </RadzenStack>
+            @if (imagesDict.Any())
+            {
+                @foreach (var kvp in imagesDict)
                 {
-                    @foreach (var kvp in imagesDict)
-                    {
-                        @* var attributeValue = attributeValues.FirstOrDefault(x => x.AttributeValue == kvp.Key);
+                    @* var attributeValue = attributeValues.FirstOrDefault(x => x.AttributeValue == kvp.Key);
                         if (attributeValue != null)
                         {
                             <RadzenStack>
@@ -87,23 +80,22 @@ else
                                 }
                             </RadzenStack>
                         } *@
-                    }
                 }
-                else
-                {
-                    <RadzenText TextStyle="TextStyle.Body2">
-                        Không có ảnh nào được tải lên cho sản phẩm này.
-                    </RadzenText>
-                }
-            </RadzenStack>
-        </RadzenCard>
-    }
-    else
-    {
-        <RadzenText TextStyle="TextStyle.H5">
-            Vui lòng thêm biến thể cho sản phẩm.
-        </RadzenText>
-    }
+            }
+            else
+            {
+                <RadzenText TextStyle="TextStyle.Body2">
+                    Không có ảnh nào được tải lên cho sản phẩm này.
+                </RadzenText>
+            }
+        </RadzenStack>
+    </RadzenCard>
+}
+else
+{
+    <RadzenText TextStyle="TextStyle.H5">
+        Vui lòng thêm biến thể cho sản phẩm.
+    </RadzenText>
 }
 
 @code {
@@ -111,7 +103,6 @@ else
     public Guid ProductId { get; set; }
 
     private Dictionary<Guid, List<string>> imagesDict = new();
-    private Guid? AttributeForCategorizeImagesId = null;
     private List<AttributeValueReadModel> attributeValues = new();
     private AddImageForProductRequest addRequest = new();
     private string validationError = string.Empty;
@@ -302,30 +293,15 @@ else
 
         if (anySuccess && !anyFailure)
         {
-            NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Success,
-                Summary = "Xóa ảnh thành công",
-                Duration = 3000
-            });
+            NotifService.Success("Xóa ảnh thành công");
         }
         else if (anySuccess && anyFailure)
         {
-            NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Warning,
-                Summary = "Xóa một số ảnh thất bại",
-                Duration = 3000
-            });
+            NotifService.Error("Xóa một số ảnh thất bại");
         }
         else
         {
-            NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Error,
-                Summary = "Xóa ảnh thất bại",
-                Duration = 3000
-            });
+            NotifService.Error("Xóa ảnh thất bại");
         }
 
         isLoading = false;

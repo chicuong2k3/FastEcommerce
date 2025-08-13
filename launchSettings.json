@@ -12,7 +12,8 @@
         "ordering.api": "StartDebugging",
         "identity.api": "StartDebugging",
         "identityserver": "StartDebugging",
-        "administration": "StartDebugging"
+        "administration": "StartDebugging",
+        "mediaservice.api": "StartDebugging"
       }
     }
   }

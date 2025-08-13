@@ -52,6 +52,12 @@ services:
       context: .
       dockerfile: src/IdentityServer/Dockerfile
 
+  mediaservice.api:
+    image: ${DOCKER_REGISTRY-}mediaserviceapi
+    build:
+      context: .
+      dockerfile: src/Modules/MediaService/MediaService.Api/Dockerfile
+
 volumes:
   portainer_data:
   seq_data:
@@ -59,6 +65,7 @@ volumes:
   rabbitmq_data:
   rabbitmq_log:
   catalog_postgres_data:
+
 
 
 
