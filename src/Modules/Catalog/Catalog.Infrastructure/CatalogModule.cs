@@ -37,9 +37,6 @@ public static class CatalogModule
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<IProductAttributeRepository, ProductAttributeRepository>();
         services.AddScoped<IBrandRepository, BrandRepository>();
-
-
-        services.AddScoped<ProductService>();
     }
 
     public static void ConfigureConsumers(this IRegistrationConfigurator registrationConfiguration)

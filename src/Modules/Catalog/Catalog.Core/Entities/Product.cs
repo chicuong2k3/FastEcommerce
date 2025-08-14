@@ -18,12 +18,12 @@ public sealed class Product : AggregateRoot<Guid>
 
     private readonly List<ProductImage> _images = new();
     private readonly List<ProductVariant> _variants = new();
-    private readonly List<Guid> _categoryIds = new();
+    private readonly List<CategoryId> _categoryIds = new();
     private readonly List<ProductAttributeValue> _productAttributeValues = new();
 
     public IReadOnlyCollection<ProductImage> Images => _images.AsReadOnly();
     public IReadOnlyCollection<ProductVariant> Variants => _variants.AsReadOnly();
-    public IReadOnlyCollection<Guid> CategoryIds => _categoryIds.AsReadOnly();
+    public IReadOnlyCollection<CategoryId> CategoryIds => _categoryIds.AsReadOnly();
     public IReadOnlyCollection<ProductAttributeValue> ProductAttributeValues => _productAttributeValues.AsReadOnly();
 
     private Product(
@@ -32,7 +32,7 @@ public sealed class Product : AggregateRoot<Guid>
         Guid? brandId,
         string? slug,
         bool isSimple,
-        List<Guid> categoryIds,
+        List<CategoryId> categoryIds,
         string? sku,
         Money? basePrice,
         Money? salePrice,
@@ -90,7 +90,7 @@ public sealed class Product : AggregateRoot<Guid>
             brandId,
             slug,
             isSimple,
-            categoryIds,
+            categoryIds.Select(x => new CategoryId(x)).ToList(),
             sku,
             basePrice,
             salePrice,
@@ -198,7 +198,7 @@ public sealed class Product : AggregateRoot<Guid>
         SaleEffectiveRange = saleEffectiveRange;
 
         _categoryIds.Clear();
-        _categoryIds.AddRange(categoryIds);
+        _categoryIds.AddRange(categoryIds.Select(id => new CategoryId(id)));
 
         Raise(new ProductUpdated(Id));
         return Result.Ok();

@@ -32,7 +32,8 @@ public class UpdateProductEndpoint : Endpoint<CreateUpdateProductRequest, Produc
             req.BasePrice,
             req.SalePrice,
             req.SaleFrom,
-            req.SaleTo), ct);
+            req.SaleTo,
+            req.ProductAttributeValuePairs.Select(p => (p.ProductAttributeId, p.ProductAttributeValue))), ct);
 
         await this.ToHttpResultAsync(result, ct);
     }

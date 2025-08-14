@@ -1,4 +1,5 @@
 ﻿using Catalog.Core.Entities;
+using Catalog.Core.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -59,23 +60,13 @@ internal sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
                  .HasColumnName("SaleTo");
         });
 
-        builder.HasMany(p => p.Categories)
-             .WithMany()
-             .UsingEntity<Dictionary<Guid, Guid>>(
-                 "ProductCategory",
-                 j => j.HasOne<Category>()
-                       .WithMany()
-                       .HasForeignKey("CategoryId")
-                       .OnDelete(DeleteBehavior.Cascade),
-                 j => j.HasOne<Product>()
-                       .WithMany()
-                       .HasForeignKey("ProductId")
-                       .OnDelete(DeleteBehavior.Cascade),
-                 j =>
-                 {
-                     j.HasKey("ProductId", "CategoryId");
-                     j.ToTable("ProductCategory");
-                 });
+        builder.OwnsMany<CategoryId>("_categoryIds", a =>
+        {
+            a.ToTable("ProductCategory");
+            a.WithOwner().HasForeignKey("ProductId");
+            a.Property(c => c.Value).HasColumnName("CategoryId");
+            a.HasKey("ProductId", "CategoryId");
+        });
 
         builder.HasMany(p => p.Variants)
                 .WithOne()
