@@ -28,6 +28,28 @@ services:
       - "4317:4317"
       - "4318:4318"
 
+  elasticsearch:
+    container_name: elasticsearch
+    restart: always
+    ports:
+      - "9200:9200"
+    environment:
+      - xpack.monitoring.enabled=true
+      - xpack.watcher.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - discovery.type=single-node
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+
+  kibana:
+    container_name: kibana
+    ports:
+      - 5601:5601
+    depends_on:
+      - elasticsearch
+    environment:
+      - ELASTICSEARCH_URL=http://localhost:9200
+
   pgadmin:
     container_name: pgAdmin4
     restart: always
@@ -99,6 +121,7 @@ services:
       - RabbitMqOptions__VHost=/
       - RabbitMqOptions__Username=guest
       - RabbitMqOptions__Password=guest
+      - Elasticsearch__Uri=http://elasticsearch:9200
     ports:
       - "12000:8080"
     volumes:
@@ -120,6 +143,7 @@ services:
       - RabbitMqOptions__Username=guest
       - RabbitMqOptions__Password=guest
       - ApiClients__Catalog=http://catalog.api:8080
+      - Elasticsearch__Uri=http://elasticsearch:9200
     ports:
       - "7000:8080"
     volumes:
@@ -142,7 +166,8 @@ services:
       - RabbitMqOptions__Username=guest
       - RabbitMqOptions__Password=guest
       - ApiClients__Catalog=http://catalog.api:8080
-      - ApiClients__Inventory=http://inventoryservice.api:8080
+      - ApiClients__Inventory=http://inventoryservice.api:8080 
+      - Elasticsearch__Uri=http://elasticsearch:9200
     ports:
       - "8000:8080"
     volumes:
@@ -179,6 +204,7 @@ services:
       - Cloudinary__CloudName=dz4xapwfd
       - Cloudinary__ApiKey=558494989385852
       - Cloudinary__ApiSecret=8KBNIh86bP2n8vJ3_1An6k-gfGc
+      - Elasticsearch__Uri=http://elasticsearch:9200
     ports:
       - "13000:8080"
     volumes:

@@ -29,5 +29,4 @@
 		<ProjectReference Include="..\..\..\Modules\Catalog\Catalog.Requests\Catalog.Requests.csproj" />
 	</ItemGroup>
 
-	
 </Project>

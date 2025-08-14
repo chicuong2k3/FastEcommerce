@@ -123,8 +123,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PaymentService.PluginContra
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MediaService.Api", "src\Modules\MediaService\MediaService.Api\MediaService.Api.csproj", "{634C7BD2-9365-C4A0-4A33-8F1254460849}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Web.Admin", "src\Presentation\Web.Admin\Web.Admin.csproj", "{BCD2E28B-F636-4BC8-BA7D-D33AB6A83DAC}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -307,10 +305,6 @@ Global
 		{634C7BD2-9365-C4A0-4A33-8F1254460849}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{634C7BD2-9365-C4A0-4A33-8F1254460849}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{634C7BD2-9365-C4A0-4A33-8F1254460849}.Release|Any CPU.Build.0 = Release|Any CPU
-		{BCD2E28B-F636-4BC8-BA7D-D33AB6A83DAC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{BCD2E28B-F636-4BC8-BA7D-D33AB6A83DAC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{BCD2E28B-F636-4BC8-BA7D-D33AB6A83DAC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{BCD2E28B-F636-4BC8-BA7D-D33AB6A83DAC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -370,7 +364,6 @@ Global
 		{B319E4B5-647F-B754-5EB3-1ED3A20C2CC5} = {6287D4E0-5962-46D6-9DD1-E62B93317685}
 		{E5FF301F-EF2D-4F3E-B4F6-8432B718091F} = {20409718-7759-45BD-8C53-992B56CE2E09}
 		{634C7BD2-9365-C4A0-4A33-8F1254460849} = {4E8A0E3D-0C82-4251-A35B-944BC34EA79C}
-		{BCD2E28B-F636-4BC8-BA7D-D33AB6A83DAC} = {C4257B6F-ED9A-473B-B3A2-068B7CF07654}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {FD6A2B0E-7C4C-4772-A1B0-F3455479408C}
