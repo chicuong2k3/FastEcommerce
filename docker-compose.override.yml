@@ -102,6 +102,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=8080
       - ASPNETCORE_HTTPS_PORTS=8081
+      - Elasticsearch__Uri=http://elasticsearch:9200
     ports:
       - "20000:8080"
       - "20001:8081"

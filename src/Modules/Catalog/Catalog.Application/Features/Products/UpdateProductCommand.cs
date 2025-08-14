@@ -11,12 +11,14 @@ public record UpdateProductCommand(
     decimal? BasePrice,
     decimal? SalePrice,
     DateTime? SaleFrom,
-    DateTime? SaleTo) : ICommand<ProductReadModel>;
+    DateTime? SaleTo,
+    IEnumerable<(Guid ProductAttributeId, string ProductAttributeValue)> ProductAttributeValuePairs)
+        : ICommand<ProductReadModel>;
 
 internal class UpdateProductCommandHandler(
     IProductRepository productRepository,
     ICategoryRepository categoryRepository,
-    ProductService productService)
+    IProductAttributeRepository productAttributeRepository)
     : ICommandHandler<UpdateProductCommand, ProductReadModel>
 {
     public async Task<Result<ProductReadModel>> Handle(UpdateProductCommand command, CancellationToken cancellationToken)
@@ -28,7 +30,6 @@ internal class UpdateProductCommandHandler(
         if (product == null)
             return Result.Fail(new NotFoundError("The product not found"));
 
-        var categories = new List<Category>();
         if (command.CategoryIds != null)
         {
             foreach (var categoryId in command.CategoryIds)
@@ -37,8 +38,6 @@ internal class UpdateProductCommandHandler(
 
                 if (category == null)
                     return Result.Fail(new NotFoundError($"The category with id '{categoryId}' not found"));
-
-                categories.Add(category);
             }
         }
 
@@ -55,17 +54,18 @@ internal class UpdateProductCommandHandler(
         var basePrice = Money.FromDecimal(command.BasePrice);
         var salePrice = Money.FromDecimal(command.SalePrice);
         var saleEffectiveRange = new DateTimeRange(command.SaleFrom, command.SaleTo);
-        var result = product.Update(
+        var result = await product.UpdateAsync(
             command.Name,
             command.Description,
             command.BrandId,
-            categories,
+            command.CategoryIds ?? [],
             command.Slug,
             command.Sku,
             basePrice,
             salePrice,
             saleEffectiveRange,
-            productService);
+            command.ProductAttributeValuePairs,
+            productAttributeRepository);
 
         if (result.IsFailed)
             return result;

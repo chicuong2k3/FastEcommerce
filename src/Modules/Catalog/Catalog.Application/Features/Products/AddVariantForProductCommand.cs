@@ -13,8 +13,7 @@ public sealed record AddVariantForProductCommand(
 
 internal sealed class AddVariantForProductCommandHandler(
     IProductRepository productRepository,
-    IProductAttributeRepository productAttributeRepository,
-    ProductService productService)
+    IProductAttributeRepository productAttributeRepository)
     : ICommandHandler<AddVariantForProductCommand>
 {
     public async Task<Result> Handle(AddVariantForProductCommand command, CancellationToken cancellationToken)
@@ -32,8 +31,7 @@ internal sealed class AddVariantForProductCommandHandler(
                                                        salePrice,
                                                        saleEffectiveRange,
                                                        command.ProductAttributeValuePairs,
-                                                       productAttributeRepository,
-                                                       productService);
+                                                       productAttributeRepository);
         if (addVariantResult.IsFailed)
             return Result.Fail(addVariantResult.Errors);
 

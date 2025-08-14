@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Shared\Shared.Api\Shared.Api.csproj" />
     <ProjectReference Include="..\..\Shared\Shared.AuthZ\Shared.AuthZ.csproj" />
   </ItemGroup>
 

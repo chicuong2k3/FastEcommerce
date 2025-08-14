@@ -1,35 +1,29 @@
-﻿using Catalog.Core.Services;
-
-namespace Catalog.Core.Entities;
+﻿namespace Catalog.Core.Entities;
 
 public sealed class Product : AggregateRoot<Guid>
 {
-    private Product()
-    {
-
-    }
+    private Product() { }
 
     public string Name { get; private set; }
     public string Slug { get; private set; }
     public string? Description { get; private set; }
     public Guid? BrandId { get; private set; }
-
     public bool IsPublished { get; private set; }
     public bool IsSimple { get; private set; }
     public SeoMeta? SeoMeta { get; private set; }
     public string? Sku { get; private set; }
-
     public Money? BasePrice { get; private set; }
     public Money? SalePrice { get; private set; }
     public DateTimeRange? SaleEffectiveRange { get; private set; }
 
-    private readonly List<ProductImage> _images = [];
-    private readonly List<ProductVariant> _variants = [];
-    private readonly List<Category> _categories = [];
-    private readonly List<ProductAttributeValue> _productAttributeValues = [];
+    private readonly List<ProductImage> _images = new();
+    private readonly List<ProductVariant> _variants = new();
+    private readonly List<Guid> _categoryIds = new();
+    private readonly List<ProductAttributeValue> _productAttributeValues = new();
+
     public IReadOnlyCollection<ProductImage> Images => _images.AsReadOnly();
     public IReadOnlyCollection<ProductVariant> Variants => _variants.AsReadOnly();
-    public IReadOnlyCollection<Category> Categories => _categories.AsReadOnly();
+    public IReadOnlyCollection<Guid> CategoryIds => _categoryIds.AsReadOnly();
     public IReadOnlyCollection<ProductAttributeValue> ProductAttributeValues => _productAttributeValues.AsReadOnly();
 
     private Product(
@@ -38,7 +32,7 @@ public sealed class Product : AggregateRoot<Guid>
         Guid? brandId,
         string? slug,
         bool isSimple,
-        List<Category> categories,
+        List<Guid> categoryIds,
         string? sku,
         Money? basePrice,
         Money? salePrice,
@@ -52,7 +46,7 @@ public sealed class Product : AggregateRoot<Guid>
         Slug = string.IsNullOrEmpty(slug) ? SlugHelper.GenerateSlug(Name) : slug;
         IsPublished = true;
         IsSimple = isSimple;
-        _categories = categories;
+        _categoryIds = categoryIds;
         Sku = sku;
         BasePrice = basePrice;
         SalePrice = salePrice;
@@ -70,55 +64,25 @@ public sealed class Product : AggregateRoot<Guid>
         Guid? brandId,
         string? slug,
         bool isSimple,
-        List<Category> categories,
+        List<Guid> categoryIds,
         string? sku,
         Money? basePrice,
         Money? salePrice,
         DateTimeRange? saleEffectiveRange,
         IEnumerable<(Guid ProductAttributeId, string ProductAttributeValue)> productAttributeValuePairs,
-        IProductAttributeRepository productAttributeRepository,
-        ProductService productService)
+        IProductAttributeRepository productAttributeRepository)
     {
-        if (!isSimple && !string.IsNullOrEmpty(sku))
-        {
-            return Result.Fail("Sku must be null when product is not simple");
-        }
+        var errors = new List<IError>();
 
-        if (basePrice != null)
-        {
-            if (!isSimple)
-            {
-                return Result.Fail("Price-related fields must be null when the product type is not simple");
-            }
-        }
+        errors.AddRange(ValidateProductTypeRules(isSimple, sku, basePrice, salePrice));
+        errors.AddRange(ValidatePriceRules(basePrice, salePrice, saleEffectiveRange));
 
-        var priceCreationResult = productService.ValidateProductPrice(basePrice, salePrice, saleEffectiveRange);
-        if (priceCreationResult.IsFailed)
-            return Result.Fail(priceCreationResult.Errors);
+        var attrValidation = await ValidateAndEnsureProductAttributesAsync(productAttributeValuePairs, productAttributeRepository, isVariant: false);
+        if (attrValidation.IsFailed)
+            errors.AddRange(attrValidation.Errors);
 
-        foreach (var pair in productAttributeValuePairs)
-        {
-            var productAttribute = await productAttributeRepository.GetByIdAsync(pair.ProductAttributeId);
-
-            if (productAttribute == null)
-                return Result.Fail(new NotFoundError($"Product attribute with id '{pair.ProductAttributeId}' not found"));
-
-            if (productAttribute.IsOption)
-            {
-                return Result.Fail($"Product attribute '{productAttribute.Name}' is an option and cannot be used for products.");
-            }
-
-            var productAttributeValues = await productAttributeRepository.GetValuesAsync(pair.ProductAttributeId);
-            var productAttributeValue = productAttributeValues.FirstOrDefault(x => x.Value.ToLower() == pair.ProductAttributeValue.ToLower());
-            if (productAttributeValue == null)
-            {
-                var result = productAttribute.AddValue(pair.ProductAttributeValue);
-                if (result.IsFailed)
-                {
-                    return Result.Fail(result.Errors);
-                }
-            }
-        }
+        if (errors.Any())
+            return Result.Fail(errors);
 
         var product = new Product(
             name,
@@ -126,7 +90,7 @@ public sealed class Product : AggregateRoot<Guid>
             brandId,
             slug,
             isSimple,
-            categories,
+            categoryIds,
             sku,
             basePrice,
             salePrice,
@@ -142,73 +106,52 @@ public sealed class Product : AggregateRoot<Guid>
         Money? salePrice,
         DateTimeRange? saleEffectiveRange,
         IEnumerable<(Guid ProductAttributeId, string ProductAttributeValue)> productAttributeValuePairs,
-        IProductAttributeRepository productAttributeRepository,
-        ProductService productService)
+        IProductAttributeRepository productAttributeRepository)
     {
         if (IsSimple)
-            return Result.Fail("Cannot add variant for this type of product.");
+            return Result.Fail("Cannot add variant for a simple product.");
 
-        var variant = Variants.FirstOrDefault(v => v.Sku == sku);
-        if (variant != null)
-        {
+        if (Variants.Any(v => v.Sku == sku))
             return Result.Fail(new ConflictError("Variant with the same Sku already exists."));
-        }
 
-        var result = ProductVariant.TryCreate(sku, basePrice, salePrice, saleEffectiveRange, productService);
-        if (result.IsFailed)
-        {
-            return Result.Fail(result.Errors);
-        }
+        var errors = new List<IError>();
+        errors.AddRange(ValidatePriceRules(basePrice, salePrice, saleEffectiveRange));
 
-        variant = result.Value;
+        var attrValidation = await ValidateAndEnsureProductAttributesAsync(productAttributeValuePairs, productAttributeRepository, isVariant: true);
+        if (attrValidation.IsFailed)
+            errors.AddRange(attrValidation.Errors);
+
+        if (errors.Any())
+            return Result.Fail(errors);
+
+        var variantResult = ProductVariant.TryCreate(sku, basePrice, salePrice, saleEffectiveRange);
+        if (variantResult.IsFailed)
+            return Result.Fail(variantResult.Errors);
+
+        var variant = variantResult.Value;
+
         foreach (var pair in productAttributeValuePairs)
         {
-            var productAttribute = await productAttributeRepository.GetByIdAsync(pair.ProductAttributeId);
-
-            if (productAttribute == null)
-                return Result.Fail(new NotFoundError($"Product attribute with id '{pair.ProductAttributeId}' not found"));
-
-            if (!productAttribute.IsOption)
-            {
-                return Result.Fail($"Product attribute '{productAttribute.Name}' is not an option and cannot be used for variants.");
-            }
-
             var productAttributeValues = await productAttributeRepository.GetValuesAsync(pair.ProductAttributeId);
-            var productAttributeValue = productAttributeValues.FirstOrDefault(x => x.Value.ToLower() == pair.ProductAttributeValue.ToLower());
-            if (productAttributeValue == null)
-            {
-                result = productAttribute.AddValue(pair.ProductAttributeValue);
-                if (result.IsFailed)
-                {
-                    return Result.Fail(result.Errors);
-                }
-            }
-
-            var addAttributeResult = variant.AddAttribute(productAttributeValue);
-            if (addAttributeResult.IsFailed)
-                return Result.Fail(addAttributeResult.Errors);
+            var attributeValue = productAttributeValues.FirstOrDefault(x => x.Value.Equals(pair.ProductAttributeValue, StringComparison.OrdinalIgnoreCase));
+            if (attributeValue == null)
+                return Result.Fail(new NotFoundError($"Product attribute value '{pair.ProductAttributeValue}' for attribute ID '{pair.ProductAttributeId}' not found."));
+            var addAttrResult = variant.AddAttribute(attributeValue);
+            if (addAttrResult.IsFailed)
+                return Result.Fail(addAttrResult.Errors);
         }
 
-        var isDuplicate = Variants.Any(existing => existing.AttributeValues.Count() > 0 &&
-            existing.AttributeValues.Count() == variant.AttributeValues.Count() &&
-            !existing.AttributeValues.Except(variant.AttributeValues).Any()
-        );
-
-        if (isDuplicate)
-        {
+        if (Variants.Any(existing => AreVariantsEquivalent(existing, variant)))
             return Result.Fail(new ConflictError("Variant with the same attributes already exists."));
-        }
 
         _variants.Add(variant);
-
         Raise(new ProductVariantAdded(Id, variant.Id));
-
         return Result.Ok();
     }
 
     public Result RemoveVariant(Guid variantId)
     {
-        var variant = Variants.FirstOrDefault(v => v.Id == variantId);
+        var variant = _variants.FirstOrDefault(v => v.Id == variantId);
         if (variant == null)
             return Result.Fail(new NotFoundError($"Variant with id '{variantId}' not found."));
 
@@ -219,71 +162,69 @@ public sealed class Product : AggregateRoot<Guid>
         return Result.Ok();
     }
 
-    public Result Update(
+    public async Task<Result> UpdateAsync(
         string name,
         string? description,
         Guid? brandId,
-        List<Category> categories,
+        List<Guid> categoryIds,
         string? slug,
         string? sku,
         Money? basePrice,
         Money? salePrice,
         DateTimeRange? saleEffectiveRange,
-        ProductService productService
+        IEnumerable<(Guid ProductAttributeId, string ProductAttributeValue)> productAttributeValuePairs,
+        IProductAttributeRepository productAttributeRepository
     )
     {
-        if (!IsSimple && !string.IsNullOrEmpty(sku))
-        {
-            return Result.Fail("Sku must be null when product is not simple");
-        }
+        var errors = new List<IError>();
+        errors.AddRange(ValidateProductTypeRules(IsSimple, sku, basePrice, salePrice));
+        errors.AddRange(ValidatePriceRules(basePrice, salePrice, saleEffectiveRange));
 
-        if (!string.IsNullOrWhiteSpace(description))
-        {
-            Description = description;
-        }
+        var attrValidation = await ValidateAndEnsureProductAttributesAsync(productAttributeValuePairs, productAttributeRepository, isVariant: true);
+        if (attrValidation.IsFailed)
+            errors.AddRange(attrValidation.Errors);
 
-        if (BrandId != brandId)
-        {
-            BrandId = brandId;
-        }
-
-        if (basePrice != null)
-        {
-            if (!IsSimple)
-            {
-                return Result.Fail("Base price must be null when product is not simple");
-            }
-
-            var priceCreationResult = productService.ValidateProductPrice(basePrice, salePrice, saleEffectiveRange);
-            if (priceCreationResult.IsFailed)
-                return Result.Fail(priceCreationResult.Errors);
-
-            BasePrice = basePrice;
-            SalePrice = salePrice;
-            SaleEffectiveRange = saleEffectiveRange;
-        }
+        if (errors.Any())
+            return Result.Fail(errors);
 
         Name = name;
+        if (!string.IsNullOrWhiteSpace(description))
+            Description = description;
+        BrandId = brandId;
         Slug = string.IsNullOrEmpty(slug) ? SlugHelper.GenerateSlug(Name) : slug;
         Sku = sku;
+        BasePrice = basePrice;
+        SalePrice = salePrice;
+        SaleEffectiveRange = saleEffectiveRange;
 
-        _categories.Clear();
-        _categories.AddRange(categories);
+        _categoryIds.Clear();
+        _categoryIds.AddRange(categoryIds);
 
         Raise(new ProductUpdated(Id));
         return Result.Ok();
     }
 
-    public Result AddImage(string imageUrl,
-                           string? imageAltText,
-                           bool isThumbnail,
-                           int sortOrder,
-                           Guid? productAttributeId,
-                           string? productAttributeValue)
+    public Result AddImage(
+        string imageUrl,
+        string? imageAltText,
+        bool isThumbnail,
+        int sortOrder,
+        Guid? productAttributeId,
+        string? productAttributeValue)
     {
         if (IsSimple && (productAttributeId != null || productAttributeValue != null))
         {
             return Result.Fail("productAttributeId and productAttributeValue must be null when product is simple");
+        }
+
+        if (_images.Any(i => i.Url == imageUrl))
+        {
+            return Result.Fail(new ConflictError($"Image with URL '{imageUrl}' already exists."));
+        }
+
+        if (isThumbnail && _images.Any(i => i.IsThumbnail))
+        {
+            return Result.Fail(new ConflictError("A product can only have one thumbnail image."));
         }
 
         var image = new ProductImage(
@@ -292,7 +233,8 @@ public sealed class Product : AggregateRoot<Guid>
             isThumbnail,
             sortOrder,
             productAttributeId,
-            productAttributeValue);
+            productAttributeValue
+        );
 
         _images.Add(image);
 
@@ -301,13 +243,116 @@ public sealed class Product : AggregateRoot<Guid>
         return Result.Ok();
     }
 
-    public void RemoveImages(List<string> imageUrls)
+    public Result RemoveImages(IEnumerable<string> imageUrls)
     {
-        _images.RemoveAll(i => imageUrls.Contains(i.Url));
+        if (imageUrls == null || !imageUrls.Any())
+            return Result.Fail("No image URLs specified for removal.");
+
+        var notFoundUrls = new List<string>();
+
+        foreach (var url in imageUrls)
+        {
+            var image = _images.FirstOrDefault(i => i.Url == url);
+            if (image != null)
+            {
+                _images.Remove(image);
+                //Raise(new ProductImageRemoved(Id, image.Id));
+            }
+            else
+            {
+                notFoundUrls.Add(url);
+            }
+        }
+
+        if (notFoundUrls.Any())
+            return Result.Fail($"Images not found for URLs: {string.Join(", ", notFoundUrls)}");
+
+        return Result.Ok();
     }
 
-    public void RaiseProductDeletedEvent()
+    private static IEnumerable<IError> ValidateProductTypeRules(bool isSimple, string? sku, Money? basePrice, Money? salePrice)
     {
-        Raise(new ProductDeleted(Id, Images.Select(i => i.Url).ToList()));
+        if (!isSimple && !string.IsNullOrEmpty(sku))
+            yield return new Error("Sku must be null when product is not simple");
+
+        if (!isSimple && basePrice != null)
+            yield return new Error("Base price must be null when the product type is not simple");
+
+        if (!isSimple && salePrice != null)
+            yield return new Error("Sale price must be null when the product type is not simple");
     }
+
+    private static IEnumerable<IError> ValidatePriceRules(Money? basePrice, Money? salePrice, DateTimeRange? saleEffectiveRange)
+    {
+        if (basePrice != null)
+        {
+            var baseValidation = basePrice.Validate();
+            if (baseValidation.IsFailed)
+            {
+                foreach (var e in baseValidation.Errors)
+                    yield return e;
+            }
+
+            if (salePrice != null && salePrice >= basePrice)
+                yield return new Error("Sale price must be less than base price");
+        }
+
+        if (salePrice != null)
+        {
+            var saleValidation = salePrice.Validate();
+            if (saleValidation.IsFailed)
+            {
+                foreach (var e in saleValidation.Errors)
+                    yield return e;
+            }
+
+            if (basePrice == null)
+                yield return new Error("Base price cannot be null if sale price is not null");
+        }
+
+        if (saleEffectiveRange != null)
+        {
+            var rangeValidation = saleEffectiveRange.Validate();
+            if (rangeValidation.IsFailed)
+            {
+                foreach (var e in rangeValidation.Errors)
+                    yield return e;
+            }
+        }
+
+        if (salePrice == null && (saleEffectiveRange?.From != null || saleEffectiveRange?.To != null))
+            yield return new Error("Sale price cannot be null if sale from/to is set");
+    }
+
+    private static async Task<Result> ValidateAndEnsureProductAttributesAsync(
+        IEnumerable<(Guid ProductAttributeId, string ProductAttributeValue)> pairs,
+        IProductAttributeRepository repo,
+        bool isVariant)
+    {
+        foreach (var pair in pairs)
+        {
+            var attr = await repo.GetByIdAsync(pair.ProductAttributeId);
+            if (attr == null)
+                return Result.Fail(new NotFoundError($"Product attribute with id '{pair.ProductAttributeId}' not found"));
+
+            if (isVariant && !attr.IsOption)
+                return Result.Fail($"Product attribute '{attr.Name}' is not an option and cannot be used for variants.");
+
+            if (!isVariant && attr.IsOption)
+                return Result.Fail($"Product attribute '{attr.Name}' is an option and cannot be used for products.");
+
+            var values = await repo.GetValuesAsync(pair.ProductAttributeId);
+            var existingValue = values.FirstOrDefault(x => x.Value.Equals(pair.ProductAttributeValue, StringComparison.OrdinalIgnoreCase));
+            if (existingValue == null)
+            {
+                var addResult = attr.AddValue(pair.ProductAttributeValue);
+                if (addResult.IsFailed) return Result.Fail(addResult.Errors);
+            }
+        }
+        return Result.Ok();
+    }
+
+    private static bool AreVariantsEquivalent(ProductVariant a, ProductVariant b) =>
+        a.AttributeValues.Count() == b.AttributeValues.Count() &&
+        !a.AttributeValues.Except(b.AttributeValues).Any();
 }

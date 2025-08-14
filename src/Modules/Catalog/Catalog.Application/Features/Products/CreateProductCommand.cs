@@ -22,14 +22,11 @@ public sealed record CreateProductCommand(
 internal sealed class CreateProductCommandHandler(
     IProductRepository productRepository,
     ICategoryRepository categoryRepository,
-    IProductAttributeRepository productAttributeRepository,
-    ProductService productService)
+    IProductAttributeRepository productAttributeRepository)
     : ICommandHandler<CreateProductCommand, ProductReadModel>
 {
     public async Task<Result<ProductReadModel>> Handle(CreateProductCommand command, CancellationToken cancellationToken)
     {
-        var categories = new List<Category>();
-
         if (command.CategoryIds != null)
         {
             foreach (var categoryId in command.CategoryIds)
@@ -38,8 +35,6 @@ internal sealed class CreateProductCommandHandler(
 
                 if (category == null)
                     return Result.Fail(new NotFoundError($"The category with id '{categoryId}' not found"));
-
-                categories.Add(category);
             }
         }
 
@@ -63,7 +58,7 @@ internal sealed class CreateProductCommandHandler(
 
         var basePrice = command.BasePrice != null ? Money.FromDecimal(command.BasePrice.Value) : null;
         var salePrice = command.SalePrice != null ? Money.FromDecimal(command.SalePrice.Value) : null;
-        var saleEffectiveRange = new DateTimeRange(command.SaleFrom, command.SaleTo);
+        var saleEffectiveRange = command.SaleFrom != null || command.SaleTo != null ? new DateTimeRange(command.SaleFrom, command.SaleTo) : null;
 
         var res = await Product.CreateAsync(
             command.Name,
@@ -71,14 +66,13 @@ internal sealed class CreateProductCommandHandler(
             command.BrandId,
             command.Slug,
             command.IsSimple,
-            categories,
+            command.CategoryIds ?? [],
             command.Sku,
             basePrice,
             salePrice,
             saleEffectiveRange,
             command.ProductAttributeValuePairs,
-            productAttributeRepository,
-            productService
+            productAttributeRepository
             );
 
         if (res.IsFailed)

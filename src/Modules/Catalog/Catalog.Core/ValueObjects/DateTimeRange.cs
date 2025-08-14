@@ -13,6 +13,11 @@ public record DateTimeRange : ValueObject
 
     public override Result Validate()
     {
+        if (From == null && To == null)
+        {
+            return Result.Fail("Either From or To date must be provided");
+        }
+
         if (From != null && To != null && From >= To)
         {
             return Result.Fail("From date must be prior to To date");

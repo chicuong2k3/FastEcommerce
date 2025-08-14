@@ -13,7 +13,6 @@ internal sealed class DeleteProductCommandHandler(
         if (product == null)
             return Result.Fail(new NotFoundError($"The product with id '{command.Id}' not found"));
 
-        product.RaiseProductDeletedEvent();
         await productRepository.RemoveAsync(product, cancellationToken);
         return Result.Ok();
     }
