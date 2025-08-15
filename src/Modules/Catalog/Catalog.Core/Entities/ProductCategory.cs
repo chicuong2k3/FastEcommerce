@@ -1,4 +1,4 @@
-﻿namespace Catalog.Infrastructure.Persistence.Configurations;
+﻿namespace Catalog.Core.Entities;
 
 public sealed class ProductCategory
 {

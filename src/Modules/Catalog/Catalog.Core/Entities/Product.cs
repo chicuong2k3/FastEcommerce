@@ -18,12 +18,12 @@ public sealed class Product : AggregateRoot<Guid>
 
     private readonly List<ProductImage> _images = new();
     private readonly List<ProductVariant> _variants = new();
-    private readonly List<Guid> _categoryIds = new();
+    private readonly List<ProductCategory> _productCategories = new();
     private readonly List<ProductAttributeValue> _productAttributeValues = new();
 
     public IReadOnlyCollection<ProductImage> Images => _images.AsReadOnly();
     public IReadOnlyCollection<ProductVariant> Variants => _variants.AsReadOnly();
-    public IReadOnlyCollection<Guid> CategoryIds => _categoryIds.AsReadOnly();
+    public IReadOnlyCollection<ProductCategory> ProductCategories => _productCategories.AsReadOnly();
     public IReadOnlyCollection<ProductAttributeValue> ProductAttributeValues => _productAttributeValues.AsReadOnly();
 
     private Product(
@@ -32,7 +32,7 @@ public sealed class Product : AggregateRoot<Guid>
         Guid? brandId,
         string? slug,
         bool isSimple,
-        List<Guid> categoryIds,
+        List<ProductCategory> productCategories,
         string? sku,
         Money? basePrice,
         Money? salePrice,
@@ -46,7 +46,7 @@ public sealed class Product : AggregateRoot<Guid>
         Slug = string.IsNullOrEmpty(slug) ? SlugHelper.GenerateSlug(Name) : slug;
         IsPublished = true;
         IsSimple = isSimple;
-        _categoryIds = categoryIds;
+        _productCategories = productCategories;
         Sku = sku;
         BasePrice = basePrice;
         SalePrice = salePrice;
@@ -90,7 +90,10 @@ public sealed class Product : AggregateRoot<Guid>
             brandId,
             slug,
             isSimple,
-            categoryIds,
+            categoryIds.Select(id => new ProductCategory()
+            {
+                CategoryId = id
+            }).ToList(),
             sku,
             basePrice,
             salePrice,
@@ -197,8 +200,12 @@ public sealed class Product : AggregateRoot<Guid>
         SalePrice = salePrice;
         SaleEffectiveRange = saleEffectiveRange;
 
-        _categoryIds.Clear();
-        _categoryIds.AddRange(categoryIds);
+        _productCategories.Clear();
+        _productCategories.AddRange(categoryIds.Select(id => new ProductCategory()
+        {
+            CategoryId = id,
+            ProductId = Id
+        }));
 
         Raise(new ProductUpdated(Id));
         return Result.Ok();
@@ -341,13 +348,6 @@ public sealed class Product : AggregateRoot<Guid>
             if (!isVariant && attr.IsOption)
                 return Result.Fail($"Product attribute '{attr.Name}' is an option and cannot be used for products.");
 
-            var values = await repo.GetValuesAsync(pair.ProductAttributeId);
-            var existingValue = values.FirstOrDefault(x => x.Value.Equals(pair.ProductAttributeValue, StringComparison.OrdinalIgnoreCase));
-            if (existingValue == null)
-            {
-                var addResult = attr.AddValue(pair.ProductAttributeValue);
-                if (addResult.IsFailed) return Result.Fail(addResult.Errors);
-            }
         }
         return Result.Ok();
     }

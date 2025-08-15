@@ -11,7 +11,7 @@ public static class ProductMapping
             Description = product.Description,
             BrandId = product.BrandId,
             Slug = product.Slug,
-            CategoryIds = product.CategoryIds.ToList(),
+            CategoryIds = product.ProductCategories.Select(pc => pc.CategoryId).ToList(),
             Sku = product.Sku,
             IsSimple = product.IsSimple,
             MetaTitle = product.SeoMeta?.Title,

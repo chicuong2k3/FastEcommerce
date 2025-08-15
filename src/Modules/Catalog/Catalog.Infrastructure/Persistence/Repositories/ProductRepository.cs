@@ -17,9 +17,10 @@ internal sealed class ProductRepository : RepositoryBase<Product, Guid>, IProduc
     public async Task<Product?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await _dbContext.Products
-            .Include(p => p.CategoryIds)
+            .Include(p => p.ProductCategories)
             .Include(p => p.Variants).ThenInclude(v => v.AttributeValues).ThenInclude(av => av.Attribute)
             .Include(p => p.Images)
+            .Include(p => p.ProductAttributeValues).ThenInclude(pav => pav.Attribute)
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
     }
 

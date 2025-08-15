@@ -60,7 +60,7 @@ internal sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
                  .HasColumnName("SaleTo");
         });
 
-        builder.HasMany<ProductCategory>()
+        builder.HasMany(p => p.ProductCategories)
             .WithOne()
             .HasForeignKey(pc => pc.ProductId)
             .IsRequired()
