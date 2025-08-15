@@ -7,6 +7,9 @@ public record UpdateProductCommand(
     Guid? BrandId,
     List<Guid> CategoryIds,
     string? Slug,
+    string? MetaTitle,
+    string? MetaDescription,
+    string? MetaKeywords,
     string? Sku,
     decimal? BasePrice,
     decimal? SalePrice,
@@ -53,7 +56,7 @@ internal class UpdateProductCommandHandler(
 
         var basePrice = Money.FromDecimal(command.BasePrice);
         var salePrice = Money.FromDecimal(command.SalePrice);
-        var saleEffectiveRange = new DateTimeRange(command.SaleFrom, command.SaleTo);
+        var saleEffectiveRange = command.SaleFrom != null || command.SaleTo != null ? new DateTimeRange(command.SaleFrom, command.SaleTo) : null;
         var result = await product.UpdateAsync(
             command.Name,
             command.Description,
@@ -69,6 +72,8 @@ internal class UpdateProductCommandHandler(
 
         if (result.IsFailed)
             return result;
+
+        product.UpdateSeoMeta(command.MetaTitle, command.MetaDescription, command.MetaKeywords);
 
         await productRepository.SaveChangesAsync(cancellationToken);
         return Result.Ok(product.ToReadModel());

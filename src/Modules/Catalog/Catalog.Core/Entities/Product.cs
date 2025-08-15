@@ -103,6 +103,14 @@ public sealed class Product : AggregateRoot<Guid>
         return product;
     }
 
+    public void UpdateSeoMeta(
+        string? metaTitle,
+        string? metaDescription,
+        string? metaKeywords)
+    {
+        SeoMeta = new SeoMeta(metaTitle, metaDescription, metaKeywords);
+    }
+
     public async Task<Result> AddVariantAsync(
         string? sku,
         Money basePrice,
@@ -183,7 +191,7 @@ public sealed class Product : AggregateRoot<Guid>
         errors.AddRange(ValidateProductTypeRules(IsSimple, sku, basePrice, salePrice));
         errors.AddRange(ValidatePriceRules(basePrice, salePrice, saleEffectiveRange));
 
-        var attrValidation = await ValidateAndEnsureProductAttributesAsync(productAttributeValuePairs, productAttributeRepository, isVariant: true);
+        var attrValidation = await ValidateAndEnsureProductAttributesAsync(productAttributeValuePairs, productAttributeRepository, isVariant: false);
         if (attrValidation.IsFailed)
             errors.AddRange(attrValidation.Errors);
 
@@ -206,6 +214,10 @@ public sealed class Product : AggregateRoot<Guid>
             CategoryId = id,
             ProductId = Id
         }));
+
+        _productAttributeValues.Clear();
+        _productAttributeValues.AddRange(productAttributeValuePairs
+            .Select(pair => new ProductAttributeValue(pair.ProductAttributeId, pair.ProductAttributeValue)));   
 
         Raise(new ProductUpdated(Id));
         return Result.Ok();

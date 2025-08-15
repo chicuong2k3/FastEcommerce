@@ -1,4 +1,6 @@
-﻿namespace Catalog.Application.Features.Products;
+﻿using Catalog.Core.Entities;
+
+namespace Catalog.Application.Features.Products;
 
 public sealed record CreateProductCommand(
     string Name,
@@ -79,6 +81,8 @@ internal sealed class CreateProductCommandHandler(
         {
             return Result.Fail(res.Errors);
         }
+
+        res.Value.UpdateSeoMeta(command.MetaTitle, command.MetaDescription, command.MetaKeywords);
 
         await productRepository.AddAsync(res.Value, cancellationToken);
         return Result.Ok(res.Value.ToReadModel());

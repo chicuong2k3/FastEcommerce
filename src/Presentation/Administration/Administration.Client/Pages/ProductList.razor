@@ -62,7 +62,7 @@
             <RadzenDataGridColumn TItem="ProductReadModel" Property="Name" Title="Tên" Width="100px" />
             <RadzenDataGridColumn TItem="ProductReadModel" Title="Hành động" Width="240px" Sortable="false" Filterable="false">
                 <Template Context="product">
-                    <RadzenButton Text="Chỉnh sửa" ButtonStyle="ButtonStyle.Warning" Size="ButtonSize.Small" Variant="Variant.Flat" Click="@(() => NavigationManager.NavigateTo($"create-edit-product/{product.Id}"))" Style="margin-right: 8px;" />
+                    <RadzenButton Text="Chỉnh sửa" ButtonStyle="ButtonStyle.Warning" Size="ButtonSize.Small" Variant="Variant.Flat" Click="@(() => NavigationManager.NavigateTo($"/admin/create-edit-product/{product.Id}"))" Style="margin-right: 8px;" />
                     <RadzenButton Text="Xóa" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Variant="Variant.Flat" Click="@(() => ShowDeleteModal(product))" Style="margin-right: 8px;" />
                     @if (!product.IsSimple)
                     {

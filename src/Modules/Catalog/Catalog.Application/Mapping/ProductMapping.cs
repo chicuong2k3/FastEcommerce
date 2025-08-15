@@ -22,6 +22,7 @@ public static class ProductMapping
             SalePrice = product.SalePrice?.Amount,
             SaleFrom = product.SaleEffectiveRange?.From,
             SaleTo = product.SaleEffectiveRange?.To,
+            ProductAttributeValuePairs = product.ProductAttributeValues.Select(av => av.ToReadModel()).ToList()
         };
     }
 

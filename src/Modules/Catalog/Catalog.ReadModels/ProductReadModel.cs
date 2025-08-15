@@ -20,4 +20,6 @@ public class ProductReadModel
     public decimal? SalePrice { get; set; }
     public DateTime? SaleFrom { get; set; }
     public DateTime? SaleTo { get; set; }
+
+    public List<AttributeValueReadModel> ProductAttributeValuePairs { get; set; } = [];
 }

@@ -14,6 +14,7 @@
 - Category null when creating a product.
 - Category name in UI is incorrect when adding a category.
 - Category name filter not working.
+- When product is deleted, the values of product attributes that is not option type are not deleted.
 
 # Paging challenges in CQRS
 

@@ -1,4 +1,6 @@
 @page "/admin/create-edit-product"
+@page "/admin/create-edit-product/{Id:guid}"
+@using System.Text.Json
 
 @inject INotifService NotifService
 @inject IValidator<CreateUpdateProductRequest> Validator
@@ -255,6 +257,8 @@
         public string Value { get; set; } = string.Empty;
     }
 
+    [Parameter] public Guid? Id { get; set; }
+
     [Parameter]
     public CreateUpdateProductRequest Product { get; set; } = new();
 
@@ -265,6 +269,47 @@
     private List<ProductAttributeValueModel> productAttributeValues = [];
 
     protected override async Task OnInitializedAsync()
+    {
+
+        await LoadCategoriesAndAttributes();
+
+        if (Id.HasValue)
+        {
+            var response = await ProductService.GetProductAsync(Id.Value);
+            if (response.ResponseMessage.IsSuccessStatusCode)
+            {
+                var product = response.GetContent();
+
+                Product = new CreateUpdateProductRequest
+                {
+                    Name = product.Name,
+                    Sku = product.Sku,
+                    Slug = product.Slug,
+                    Description = product.Description,
+                    BrandId = product.BrandId,
+                    IsSimple = product.IsSimple,
+                    BasePrice = product.BasePrice,
+                    SalePrice = product.SalePrice,
+                    SaleFrom = product.SaleFrom,
+                    SaleTo = product.SaleTo,
+                    MetaTitle = product.MetaTitle,
+                    MetaKeywords = product.MetaKeywords,
+                    MetaDescription = product.MetaDescription,
+                    CategoryIds = product.CategoryIds
+                };
+
+                productAttributeValues = product.ProductAttributeValuePairs
+                    .Select(p => new ProductAttributeValueModel
+                    {
+                        AttributeId = p.AttributeId,
+                        Value = p.AttributeValue
+                    })
+                    .ToList();
+            }
+        }
+    }
+
+    private async Task LoadCategoriesAndAttributes()
     {
         var response = await ProductAttributeService.GetProductAttributesAsync();
         if (response.ResponseMessage.IsSuccessStatusCode)
@@ -289,15 +334,31 @@
             })
             .ToList();
 
-        var response = await ProductService.CreateProductAsync(Product);
-        if (response.ResponseMessage.IsSuccessStatusCode)
+        if (Id.HasValue)
         {
-            NotifService.Success("Thêm thành công");
-            NavigationManager.NavigateTo("/admin/products");
+            var response = await ProductService.UpdateProductAsync(Id.Value, Product);
+            if (response.ResponseMessage.IsSuccessStatusCode)
+            {
+                NotifService.Success("Chỉnh sửa thành công");
+                NavigationManager.NavigateTo("/admin/products");
+            }
+            else
+            {
+                NotifService.Error($"Chỉnh sửa thất bại: {response.ResponseMessage}");
+            }
         }
         else
         {
-            NotifService.Error("Thêm thất bại");
+            var response = await ProductService.CreateProductAsync(Product);
+            if (response.ResponseMessage.IsSuccessStatusCode)
+            {
+                NotifService.Success("Thêm thành công");
+                NavigationManager.NavigateTo("/admin/products");
+            }
+            else
+            {
+                NotifService.Error("Thêm thất bại");
+            }
         }
     }
 
@@ -343,20 +404,6 @@
                 });
             }
         }
-    }
-
-    private async Task HandleEdit()
-    {
-        // var response = await ProductService.UpdateProductAsync(selectedProductId, Product);
-        // if (response.ResponseMessage.IsSuccessStatusCode)
-        // {
-        //     NotifService.Success("Chỉnh sửa thành công");
-        //     await LoadProductsAsync();
-        // }
-        // else
-        // {
-        //     NotifService.Error("Chỉnh sửa thất bại");
-        // }
     }
 
     private async Task HandleCreate()
