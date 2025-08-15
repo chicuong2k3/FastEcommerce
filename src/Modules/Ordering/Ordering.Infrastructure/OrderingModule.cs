@@ -7,8 +7,10 @@ using Ordering.Core.Repositories;
 using Ordering.Infrastructure.ApiClients;
 using Ordering.Infrastructure.Persistence;
 using Ordering.Infrastructure.Persistence.Repositories;
+using Polly;
 using Shared.Core;
 using Shared.Infrastructure;
+using Shared.Infrastructure.Logging;
 
 namespace Ordering.Infrastructure;
 
@@ -41,18 +43,19 @@ public static class OrderingModule
 
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-        services.AddScoped<IProductClient, ProductClient>();
-        services.AddScoped<IStockClient, StockClient>();
-
-        services.AddHttpClient("CatalogClient", client =>
+        services.AddHttpClient<IProductClient, ProductClient>(client =>
         {
             client.BaseAddress = new Uri(configuration["ApiClients:Catalog"] ?? throw new ArgumentException("ApiClients:Catalog is not configured"));
-        });
+        })
+            .AddHttpMessageHandler<LoggingDelegatingHandler>();
 
-        services.AddHttpClient("InventoryClient", client =>
+        services.AddHttpClient<IStockClient, StockClient>(client =>
         {
             client.BaseAddress = new Uri(configuration["ApiClients:Inventory"] ?? throw new ArgumentException("ApiClients:Inventory is not configured"));
-        });
+        })
+            .AddHttpMessageHandler<LoggingDelegatingHandler>()
+            .AddTransientHttpErrorPolicy(policy => policy.WaitAndRetryAsync(3, _ => TimeSpan.FromSeconds(3)))
+            .AddTransientHttpErrorPolicy(policy => policy.CircuitBreakerAsync(5, TimeSpan.FromSeconds(30)));
     }
 
     public static void ConfigureConsumers(this IRegistrationConfigurator registrationConfiguration)

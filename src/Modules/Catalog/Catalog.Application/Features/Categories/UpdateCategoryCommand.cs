@@ -43,7 +43,7 @@ internal sealed class UpdateCategoryCommandHandler(
             command.Description,
             command.Slug,
             command.PictureUrl,
-            new SeoMeta(command.MetaTitle, command.Description, command.MetaKeywords));
+            new SeoMeta(command.MetaTitle, command.MetaDescription, command.MetaKeywords));
 
         await categoryRepository.SaveChangesAsync(cancellationToken);
         return Result.Ok(category.ToReadModel());

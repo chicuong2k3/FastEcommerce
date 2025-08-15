@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Catalog.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(CatalogDbContext))]
-    [Migration("20250712042146_UpdateAttributeTable")]
-    partial class UpdateAttributeTable
+    [Migration("20250815113441_Init")]
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -153,7 +153,6 @@ namespace Catalog.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Catalog.Core.Entities.ProductAttributeValue", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("AttributeId")
@@ -229,6 +228,21 @@ namespace Catalog.Infrastructure.Persistence.Migrations
                     b.ToTable("ProductVariants", "catalog");
                 });
 
+            modelBuilder.Entity("Catalog.Infrastructure.Persistence.Configurations.ProductCategory", b =>
+                {
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("ProductId", "CategoryId");
+
+                    b.HasIndex("CategoryId");
+
+                    b.ToTable("ProductCategory", "catalog");
+                });
+
             modelBuilder.Entity("ProductAttributeValueProductVariant", b =>
                 {
                     b.Property<Guid>("AttributeValuesId")
@@ -242,21 +256,6 @@ namespace Catalog.Infrastructure.Persistence.Migrations
                     b.HasIndex("ProductVariantId");
 
                     b.ToTable("ProductAttributeValueProductVariant", "catalog");
-                });
-
-            modelBuilder.Entity("ProductCategory", b =>
-                {
-                    b.Property<Guid>("ProductId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CategoryId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("ProductId", "CategoryId");
-
-                    b.HasIndex("CategoryId");
-
-                    b.ToTable("ProductCategory", "catalog");
                 });
 
             modelBuilder.Entity("ProductProductAttributeValue", b =>
@@ -407,10 +406,14 @@ namespace Catalog.Infrastructure.Persistence.Migrations
                         .HasForeignKey("BrandId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.OwnsOne("Catalog.Core.ValueObjects.ProductPrice", "Price", b1 =>
+                    b.OwnsOne("Shared.Core.Money", "BasePrice", b1 =>
                         {
                             b1.Property<Guid>("ProductId")
                                 .HasColumnType("uuid");
+
+                            b1.Property<decimal>("Amount")
+                                .HasColumnType("numeric")
+                                .HasColumnName("BasePrice");
 
                             b1.HasKey("ProductId");
 
@@ -418,68 +421,44 @@ namespace Catalog.Infrastructure.Persistence.Migrations
 
                             b1.WithOwner()
                                 .HasForeignKey("ProductId");
+                        });
 
-                            b1.OwnsOne("Shared.Core.Money", "BasePrice", b2 =>
-                                {
-                                    b2.Property<Guid>("ProductPriceProductId")
-                                        .HasColumnType("uuid");
+                    b.OwnsOne("Catalog.Core.ValueObjects.DateTimeRange", "SaleEffectiveRange", b1 =>
+                        {
+                            b1.Property<Guid>("ProductId")
+                                .HasColumnType("uuid");
 
-                                    b2.Property<decimal>("Amount")
-                                        .HasColumnType("numeric")
-                                        .HasColumnName("BasePrice");
+                            b1.Property<DateTime?>("From")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("SaleFrom");
 
-                                    b2.HasKey("ProductPriceProductId");
+                            b1.Property<DateTime?>("To")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("SaleTo");
 
-                                    b2.ToTable("Products", "catalog");
+                            b1.HasKey("ProductId");
 
-                                    b2.WithOwner()
-                                        .HasForeignKey("ProductPriceProductId");
-                                });
+                            b1.ToTable("Products", "catalog");
 
-                            b1.OwnsOne("Pricing.Core.ValueObjects.DateTimeRange", "SaleEffectiveRange", b2 =>
-                                {
-                                    b2.Property<Guid>("ProductPriceProductId")
-                                        .HasColumnType("uuid");
+                            b1.WithOwner()
+                                .HasForeignKey("ProductId");
+                        });
 
-                                    b2.Property<DateTime?>("From")
-                                        .HasColumnType("timestamp with time zone")
-                                        .HasColumnName("SaleFrom");
+                    b.OwnsOne("Shared.Core.Money", "SalePrice", b1 =>
+                        {
+                            b1.Property<Guid>("ProductId")
+                                .HasColumnType("uuid");
 
-                                    b2.Property<DateTime?>("To")
-                                        .HasColumnType("timestamp with time zone")
-                                        .HasColumnName("SaleTo");
+                            b1.Property<decimal>("Amount")
+                                .HasColumnType("numeric")
+                                .HasColumnName("SalePrice");
 
-                                    b2.HasKey("ProductPriceProductId");
+                            b1.HasKey("ProductId");
 
-                                    b2.ToTable("Products", "catalog");
+                            b1.ToTable("Products", "catalog");
 
-                                    b2.WithOwner()
-                                        .HasForeignKey("ProductPriceProductId");
-                                });
-
-                            b1.OwnsOne("Shared.Core.Money", "SalePrice", b2 =>
-                                {
-                                    b2.Property<Guid>("ProductPriceProductId")
-                                        .HasColumnType("uuid");
-
-                                    b2.Property<decimal>("Amount")
-                                        .HasColumnType("numeric")
-                                        .HasColumnName("SalePrice");
-
-                                    b2.HasKey("ProductPriceProductId");
-
-                                    b2.ToTable("Products", "catalog");
-
-                                    b2.WithOwner()
-                                        .HasForeignKey("ProductPriceProductId");
-                                });
-
-                            b1.Navigation("BasePrice");
-
-                            b1.Navigation("SaleEffectiveRange")
-                                .IsRequired();
-
-                            b1.Navigation("SalePrice");
+                            b1.WithOwner()
+                                .HasForeignKey("ProductId");
                         });
 
                     b.OwnsOne("Catalog.Core.ValueObjects.SeoMeta", "SeoMeta", b1 =>
@@ -510,8 +489,11 @@ namespace Catalog.Infrastructure.Persistence.Migrations
                                 .HasForeignKey("ProductId");
                         });
 
-                    b.Navigation("Price")
-                        .IsRequired();
+                    b.Navigation("BasePrice");
+
+                    b.Navigation("SaleEffectiveRange");
+
+                    b.Navigation("SalePrice");
 
                     b.Navigation("SeoMeta");
                 });
@@ -519,7 +501,7 @@ namespace Catalog.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Catalog.Core.Entities.ProductAttributeValue", b =>
                 {
                     b.HasOne("Catalog.Core.Entities.ProductAttribute", "Attribute")
-                        .WithMany()
+                        .WithMany("Values")
                         .HasForeignKey("AttributeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -549,10 +531,14 @@ namespace Catalog.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.OwnsOne("Catalog.Core.ValueObjects.ProductPrice", "Price", b1 =>
+                    b.OwnsOne("Shared.Core.Money", "BasePrice", b1 =>
                         {
                             b1.Property<Guid>("ProductVariantId")
                                 .HasColumnType("uuid");
+
+                            b1.Property<decimal>("Amount")
+                                .HasColumnType("numeric")
+                                .HasColumnName("BasePrice");
 
                             b1.HasKey("ProductVariantId");
 
@@ -560,71 +546,66 @@ namespace Catalog.Infrastructure.Persistence.Migrations
 
                             b1.WithOwner()
                                 .HasForeignKey("ProductVariantId");
-
-                            b1.OwnsOne("Shared.Core.Money", "BasePrice", b2 =>
-                                {
-                                    b2.Property<Guid>("ProductPriceProductVariantId")
-                                        .HasColumnType("uuid");
-
-                                    b2.Property<decimal>("Amount")
-                                        .HasColumnType("numeric")
-                                        .HasColumnName("BasePrice");
-
-                                    b2.HasKey("ProductPriceProductVariantId");
-
-                                    b2.ToTable("ProductVariants", "catalog");
-
-                                    b2.WithOwner()
-                                        .HasForeignKey("ProductPriceProductVariantId");
-                                });
-
-                            b1.OwnsOne("Pricing.Core.ValueObjects.DateTimeRange", "SaleEffectiveRange", b2 =>
-                                {
-                                    b2.Property<Guid>("ProductPriceProductVariantId")
-                                        .HasColumnType("uuid");
-
-                                    b2.Property<DateTime?>("From")
-                                        .HasColumnType("timestamp with time zone")
-                                        .HasColumnName("SaleFrom");
-
-                                    b2.Property<DateTime?>("To")
-                                        .HasColumnType("timestamp with time zone")
-                                        .HasColumnName("SaleTo");
-
-                                    b2.HasKey("ProductPriceProductVariantId");
-
-                                    b2.ToTable("ProductVariants", "catalog");
-
-                                    b2.WithOwner()
-                                        .HasForeignKey("ProductPriceProductVariantId");
-                                });
-
-                            b1.OwnsOne("Shared.Core.Money", "SalePrice", b2 =>
-                                {
-                                    b2.Property<Guid>("ProductPriceProductVariantId")
-                                        .HasColumnType("uuid");
-
-                                    b2.Property<decimal>("Amount")
-                                        .HasColumnType("numeric")
-                                        .HasColumnName("SalePrice");
-
-                                    b2.HasKey("ProductPriceProductVariantId");
-
-                                    b2.ToTable("ProductVariants", "catalog");
-
-                                    b2.WithOwner()
-                                        .HasForeignKey("ProductPriceProductVariantId");
-                                });
-
-                            b1.Navigation("BasePrice");
-
-                            b1.Navigation("SaleEffectiveRange")
-                                .IsRequired();
-
-                            b1.Navigation("SalePrice");
                         });
 
-                    b.Navigation("Price")
+                    b.OwnsOne("Catalog.Core.ValueObjects.DateTimeRange", "SaleEffectiveRange", b1 =>
+                        {
+                            b1.Property<Guid>("ProductVariantId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<DateTime?>("From")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("SaleFrom");
+
+                            b1.Property<DateTime?>("To")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("SaleTo");
+
+                            b1.HasKey("ProductVariantId");
+
+                            b1.ToTable("ProductVariants", "catalog");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ProductVariantId");
+                        });
+
+                    b.OwnsOne("Shared.Core.Money", "SalePrice", b1 =>
+                        {
+                            b1.Property<Guid>("ProductVariantId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<decimal>("Amount")
+                                .HasColumnType("numeric")
+                                .HasColumnName("SalePrice");
+
+                            b1.HasKey("ProductVariantId");
+
+                            b1.ToTable("ProductVariants", "catalog");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ProductVariantId");
+                        });
+
+                    b.Navigation("BasePrice")
+                        .IsRequired();
+
+                    b.Navigation("SaleEffectiveRange");
+
+                    b.Navigation("SalePrice");
+                });
+
+            modelBuilder.Entity("Catalog.Infrastructure.Persistence.Configurations.ProductCategory", b =>
+                {
+                    b.HasOne("Catalog.Core.Entities.Category", null)
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Catalog.Core.Entities.Product", null)
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
@@ -639,21 +620,6 @@ namespace Catalog.Infrastructure.Persistence.Migrations
                     b.HasOne("Catalog.Core.Entities.ProductVariant", null)
                         .WithMany()
                         .HasForeignKey("ProductVariantId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("ProductCategory", b =>
-                {
-                    b.HasOne("Catalog.Core.Entities.Category", null)
-                        .WithMany()
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Catalog.Core.Entities.Product", null)
-                        .WithMany()
-                        .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -683,6 +649,11 @@ namespace Catalog.Infrastructure.Persistence.Migrations
                     b.Navigation("Images");
 
                     b.Navigation("Variants");
+                });
+
+            modelBuilder.Entity("Catalog.Core.Entities.ProductAttribute", b =>
+                {
+                    b.Navigation("Values");
                 });
 #pragma warning restore 612, 618
         }

@@ -8,9 +8,9 @@ internal class StockClient : IStockClient
 {
     private readonly HttpClient _httpClient;
 
-    public StockClient(IHttpClientFactory httpClientFactory)
+    public StockClient(HttpClient httpClient)
     {
-        _httpClient = httpClientFactory.CreateClient("InventoryClient");
+        _httpClient = httpClient;
     }
 
     public async Task<StockReadModel?> GetStockAsync(Guid productId, Guid? productVariantId, CancellationToken cancellationToken = default)

@@ -225,6 +225,21 @@ namespace Catalog.Infrastructure.Persistence.Migrations
                     b.ToTable("ProductVariants", "catalog");
                 });
 
+            modelBuilder.Entity("Catalog.Infrastructure.Persistence.Configurations.ProductCategory", b =>
+                {
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("ProductId", "CategoryId");
+
+                    b.HasIndex("CategoryId");
+
+                    b.ToTable("ProductCategory", "catalog");
+                });
+
             modelBuilder.Entity("ProductAttributeValueProductVariant", b =>
                 {
                     b.Property<Guid>("AttributeValuesId")
@@ -238,21 +253,6 @@ namespace Catalog.Infrastructure.Persistence.Migrations
                     b.HasIndex("ProductVariantId");
 
                     b.ToTable("ProductAttributeValueProductVariant", "catalog");
-                });
-
-            modelBuilder.Entity("ProductCategory", b =>
-                {
-                    b.Property<Guid>("ProductId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CategoryId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("ProductId", "CategoryId");
-
-                    b.HasIndex("CategoryId");
-
-                    b.ToTable("ProductCategory", "catalog");
                 });
 
             modelBuilder.Entity("ProductProductAttributeValue", b =>
@@ -583,11 +583,27 @@ namespace Catalog.Infrastructure.Persistence.Migrations
                                 .HasForeignKey("ProductVariantId");
                         });
 
-                    b.Navigation("BasePrice");
+                    b.Navigation("BasePrice")
+                        .IsRequired();
 
                     b.Navigation("SaleEffectiveRange");
 
                     b.Navigation("SalePrice");
+                });
+
+            modelBuilder.Entity("Catalog.Infrastructure.Persistence.Configurations.ProductCategory", b =>
+                {
+                    b.HasOne("Catalog.Core.Entities.Category", null)
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Catalog.Core.Entities.Product", null)
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ProductAttributeValueProductVariant", b =>
@@ -601,21 +617,6 @@ namespace Catalog.Infrastructure.Persistence.Migrations
                     b.HasOne("Catalog.Core.Entities.ProductVariant", null)
                         .WithMany()
                         .HasForeignKey("ProductVariantId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("ProductCategory", b =>
-                {
-                    b.HasOne("Catalog.Core.Entities.Category", null)
-                        .WithMany()
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Catalog.Core.Entities.Product", null)
-                        .WithMany()
-                        .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

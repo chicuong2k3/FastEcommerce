@@ -60,13 +60,12 @@ internal sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
                  .HasColumnName("SaleTo");
         });
 
-        builder.OwnsMany<CategoryId>("_categoryIds", a =>
-        {
-            a.ToTable("ProductCategory");
-            a.WithOwner().HasForeignKey("ProductId");
-            a.Property(c => c.Value).HasColumnName("CategoryId");
-            a.HasKey("ProductId", "CategoryId");
-        });
+        builder.HasMany<ProductCategory>()
+            .WithOne()
+            .HasForeignKey(pc => pc.ProductId)
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Cascade);
+
 
         builder.HasMany(p => p.Variants)
                 .WithOne()

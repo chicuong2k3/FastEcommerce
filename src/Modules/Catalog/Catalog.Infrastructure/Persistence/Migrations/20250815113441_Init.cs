@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Catalog.Infrastructure.Persistence.Migrations
 {
     /// <inheritdoc />
-    public partial class UpdateAttributeTable : Migration
+    public partial class Init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -254,7 +254,7 @@ namespace Catalog.Infrastructure.Persistence.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Sku = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
-                    BasePrice = table.Column<decimal>(type: "numeric", nullable: true),
+                    BasePrice = table.Column<decimal>(type: "numeric", nullable: false),
                     SalePrice = table.Column<decimal>(type: "numeric", nullable: true),
                     SaleFrom = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     SaleTo = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),

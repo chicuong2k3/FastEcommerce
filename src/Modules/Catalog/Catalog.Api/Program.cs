@@ -8,7 +8,6 @@ builder.AddSharedApi(builder.Configuration);
 
 var app = builder.Build();
 
-
 app.UseSharedApi(builder.Configuration);
 
 app.Run();

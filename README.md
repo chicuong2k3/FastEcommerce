@@ -12,6 +12,8 @@
 - Update category not reflecting the updated info in the UI.
 - Does not notify when add attribute fails.
 - Category null when creating a product.
+- Category name in UI is incorrect when adding a category.
+- Category name filter not working.
 
 # Paging challenges in CQRS
 

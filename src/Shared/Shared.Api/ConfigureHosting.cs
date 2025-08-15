@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
-using Shared.Api.Log;
+using Shared.Api.Logs;
 using System.Reflection;
 
 namespace Shared.Api;

@@ -200,14 +200,14 @@
                             <RadzenColumn Size="6">
                                 <RadzenFormField Text="Thuộc tính" Variant="Variant.Outlined" Style="width: 100%">
                                     <ChildContent>
-                                        <RadzenDropDown Value="@attrId" TValue="Guid?"
+                                        @* <RadzenDropDown Value="@attrId" TValue="Guid?"
                                                         Data="@availableProductAttributes"
                                                         TextProperty="DisplayName"
                                                         ValueProperty="Id"
                                                         Change="@(newAttrId => OnAttributeChanged(attrId, newAttrId))"
                                                         Placeholder="Chọn thuộc tính"
                                                         AllowClear="true"
-                                                        Disabled="@(productAttributes.Count() == 0)" />
+                                                        Disabled="@(productAttributes.Count() == 0)" /> *@
                                     </ChildContent>
                                 </RadzenFormField>
                             </RadzenColumn>

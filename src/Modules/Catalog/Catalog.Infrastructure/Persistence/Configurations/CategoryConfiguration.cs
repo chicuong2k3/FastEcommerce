@@ -43,6 +43,10 @@ internal sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
             .HasForeignKey("ParentCategoryId")
             .OnDelete(DeleteBehavior.SetNull);
 
-
+        builder.HasMany<ProductCategory>()
+            .WithOne()
+            .HasForeignKey(pc => pc.CategoryId)
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

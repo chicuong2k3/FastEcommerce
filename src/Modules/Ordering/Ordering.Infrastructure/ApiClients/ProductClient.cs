@@ -9,9 +9,9 @@ internal class ProductClient : IProductClient
 {
     private readonly HttpClient _httpClient;
 
-    public ProductClient(IHttpClientFactory httpClientFactory)
+    public ProductClient(HttpClient httpClient)
     {
-        _httpClient = httpClientFactory.CreateClient("CatalogClient");
+        _httpClient = httpClient;
     }
 
     public async Task<ProductReadModel?> GetProductByIdAsync(Guid productId, CancellationToken cancellationToken)
