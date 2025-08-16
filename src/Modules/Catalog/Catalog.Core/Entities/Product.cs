@@ -122,7 +122,7 @@ public sealed class Product : AggregateRoot<Guid>
         if (IsSimple)
             return Result.Fail("Cannot add variant for a simple product.");
 
-        if (Variants.Any(v => v.Sku == sku))
+        if (!string.IsNullOrEmpty(sku) && Variants.Any(v => v.Sku == sku))
             return Result.Fail(new ConflictError("Variant with the same Sku already exists."));
 
         var errors = new List<IError>();
@@ -146,10 +146,14 @@ public sealed class Product : AggregateRoot<Guid>
             var productAttributeValues = await productAttributeRepository.GetValuesAsync(pair.ProductAttributeId);
             var attributeValue = productAttributeValues.FirstOrDefault(x => x.Value.Equals(pair.ProductAttributeValue, StringComparison.OrdinalIgnoreCase));
             if (attributeValue == null)
-                return Result.Fail(new NotFoundError($"Product attribute value '{pair.ProductAttributeValue}' for attribute ID '{pair.ProductAttributeId}' not found."));
+            {
+                attributeValue = new ProductAttributeValue(pair.ProductAttributeId, pair.ProductAttributeValue);
+            }
+
             var addAttrResult = variant.AddAttribute(attributeValue);
             if (addAttrResult.IsFailed)
                 return Result.Fail(addAttrResult.Errors);
+
         }
 
         if (Variants.Any(existing => AreVariantsEquivalent(existing, variant)))
@@ -217,7 +221,7 @@ public sealed class Product : AggregateRoot<Guid>
 
         _productAttributeValues.Clear();
         _productAttributeValues.AddRange(productAttributeValuePairs
-            .Select(pair => new ProductAttributeValue(pair.ProductAttributeId, pair.ProductAttributeValue)));   
+            .Select(pair => new ProductAttributeValue(pair.ProductAttributeId, pair.ProductAttributeValue)));
 
         Raise(new ProductUpdated(Id));
         return Result.Ok();

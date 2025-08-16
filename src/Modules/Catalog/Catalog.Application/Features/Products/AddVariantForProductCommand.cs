@@ -1,4 +1,7 @@
-﻿namespace Catalog.Application.Features.Products;
+﻿using Microsoft.Extensions.Logging;
+using System.Text.Json;
+
+namespace Catalog.Application.Features.Products;
 
 public sealed record AddVariantForProductCommand(
     Guid ProductId,
@@ -13,7 +16,8 @@ public sealed record AddVariantForProductCommand(
 
 internal sealed class AddVariantForProductCommandHandler(
     IProductRepository productRepository,
-    IProductAttributeRepository productAttributeRepository)
+    IProductAttributeRepository productAttributeRepository,
+    ILogger<AddVariantForProductCommandHandler> logger)
     : ICommandHandler<AddVariantForProductCommand>
 {
     public async Task<Result> Handle(AddVariantForProductCommand command, CancellationToken cancellationToken)
@@ -25,7 +29,8 @@ internal sealed class AddVariantForProductCommandHandler(
 
         var basePrice = Money.FromDecimal(command.BasePrice);
         var salePrice = command.SalePrice != null ? Money.FromDecimal(command.SalePrice.Value) : null;
-        var saleEffectiveRange = new DateTimeRange(command.SaleFrom, command.SaleTo);
+        var saleEffectiveRange = command.SaleFrom != null || command.SaleTo != null ? new DateTimeRange(command.SaleFrom, command.SaleTo) : null;
+
         var addVariantResult = await product.AddVariantAsync(command.Sku,
                                                        basePrice,
                                                        salePrice,
@@ -33,7 +38,11 @@ internal sealed class AddVariantForProductCommandHandler(
                                                        command.ProductAttributeValuePairs,
                                                        productAttributeRepository);
         if (addVariantResult.IsFailed)
+        {
+            logger.LogError("Failed to add variant for product {ProductId}: {Errors}",
+                command.ProductId, JsonSerializer.Serialize(addVariantResult.Errors));
             return Result.Fail(addVariantResult.Errors);
+        }
 
         await productRepository.SaveChangesAsync(cancellationToken);
         return Result.Ok();

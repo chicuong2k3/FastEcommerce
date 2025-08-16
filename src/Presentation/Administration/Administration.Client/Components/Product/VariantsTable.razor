@@ -1,5 +1,5 @@
 ﻿@using System.Globalization
-@inject NotificationService NotificationService
+@inject INotifService NotifService
 @inject DialogService DialogService
 @inject IProductService ProductService
 
@@ -7,15 +7,17 @@
     <Columns>
         <RadzenDataGridColumn TItem="ProductVariantReadModel" Property="VariantId" Title="Biến thể" Sortable="false">
             <Template Context="item">
-                @foreach (var displayPart in GetVariantDisplay(item))
-                {
-                    <RadzenBadge BadgeStyle="BadgeStyle.Info" style="margin-right: 8px;"></RadzenBadge>
-                }
+                <RadzenStack Gap="2px">
+                    @foreach (var displayPart in GetVariantDisplay(item))
+                    {
+                        <RadzenBadge BadgeStyle="BadgeStyle.Info">@displayPart</RadzenBadge>
+                    }
+                </RadzenStack>
             </Template>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="ProductVariantReadModel" Property="BasePrice" Title="Giá">
             <Template Context="item">
-
+                @item.BasePrice
             </Template>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="ProductVariantReadModel" Property="Quantity" Title="Số lượng" />
@@ -77,13 +79,13 @@
         }
     }
 
+
     private IEnumerable<string> GetVariantDisplay(ProductVariantReadModel variant)
     {
-        // var displayParts = variant.AttributeValues
-        //     .OrderBy(av => av.AttributeName)
-        //     .Select(av => $"{av.AttributeName}: {av.AttributeValue}");
-        // return displayParts;
-        return [];
+        var displayParts = variant.ProductAttributeValuePairs
+            .OrderBy(pair => pair.AttributeId)
+            .Select(av => $"{av.AttributeName}: {av.AttributeValue}");
+        return displayParts;
     }
 
     private async Task ShowDeleteConfirm(ProductVariantReadModel? variant)
@@ -118,21 +120,11 @@
             {
                 variants = variants.Where(v => v.Id != variantToDelete.Id).ToList();
 
-                NotificationService.Notify(new NotificationMessage
-                {
-                    Severity = NotificationSeverity.Success,
-                    Summary = "Xóa thành công",
-                    Duration = 3000
-                });
+                NotifService.Success("Xóa biến thể thành công");
             }
             else
             {
-                NotificationService.Notify(new NotificationMessage
-                {
-                    Severity = NotificationSeverity.Error,
-                    Summary = "Xóa thất bại",
-                    Duration = 3000
-                });
+                NotifService.Error("Xóa biến thể thất bại");
             }
         }
 
@@ -144,7 +136,7 @@
         variantToEditId = variant.Id;
         variantToEdit = new UpdateVariantRequest
         {
-            BasePrice = variant.BasePrice.Value,
+            BasePrice = variant.BasePrice,
             SalePrice = variant.SalePrice,
             SaleFrom = variant.SaleFrom,
             SaleTo = variant.SaleTo
@@ -175,21 +167,11 @@
             }
 
             variants = updatedVariants;
-            NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Success,
-                Summary = "Chỉnh sửa thành công",
-                Duration = 3000
-            });
+            NotifService.Success("Chỉnh sửa biến thể thành công");
         }
         else
         {
-            NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Error,
-                Summary = "Chỉnh sửa thất bại",
-                Duration = 3000
-            });
+            NotifService.Error("Chỉnh sửa biến thể thất bại");
         }
     }
 }

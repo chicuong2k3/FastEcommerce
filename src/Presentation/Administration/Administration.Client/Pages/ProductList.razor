@@ -67,9 +67,9 @@
                     @if (!product.IsSimple)
                     {
 
-                        <RadzenButton Text="Các biến thể" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small" Variant="Variant.Flat" Click="@(() => NavigationManager.NavigateTo($"/products/{product.Id}/variants"))" Style="margin-right: 8px;" />
+                        <RadzenButton Text="Các biến thể" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small" Variant="Variant.Flat" Click="@(() => NavigationManager.NavigateTo($"/admin/products/{product.Id}/variants"))" Style="margin-right: 8px;" />
                     }
-                    <RadzenButton Text="Ảnh" ButtonStyle="ButtonStyle.Dark" Size="ButtonSize.Small" Variant="Variant.Flat" Click="@(() => NavigationManager.NavigateTo($"/products/{product.Id}/images"))" />
+                    <RadzenButton Text="Ảnh" ButtonStyle="ButtonStyle.Dark" Size="ButtonSize.Small" Variant="Variant.Flat" Click="@(() => NavigationManager.NavigateTo($"/admin/products/{product.Id}/images"))" />
                 </Template>
             </RadzenDataGridColumn>
         </Columns>

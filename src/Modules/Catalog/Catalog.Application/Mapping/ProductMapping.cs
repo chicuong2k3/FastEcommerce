@@ -33,7 +33,7 @@ public static class ProductMapping
             Id = variant.Id,
             Sku = variant.Sku,
             ProductAttributeValuePairs = variant.AttributeValues.Select(av => av.ToReadModel()).ToList(),
-            BasePrice = variant.BasePrice?.Amount,
+            BasePrice = variant.BasePrice.Amount,
             SalePrice = variant.SalePrice?.Amount,
             SaleFrom = variant.SaleEffectiveRange?.From,
             SaleTo = variant.SaleEffectiveRange?.To,
