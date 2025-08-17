@@ -4,42 +4,27 @@
 @using Microsoft.AspNetCore.Identity
 @using IdentityServer.Data
 
-@inject IIdentityServerInteractionService Interaction
-@inject IAuthenticationSchemeProvider SchemeProvider
-@inject IClientStore ClientStore
 @inject NavigationManager NavigationManager
-@inject IHttpClientFactory HttpClientFactory
 
-@if (externalLogins.Count > 0)
-{
 
-    <RadzenStack Gap="4px">
-        @foreach (var provider in externalLogins)
-        {
-            <RadzenButton Text="@($"Đăng nhập với {provider.DisplayName}")"
-                          ButtonStyle="ButtonStyle.Secondary"
-                          Size="ButtonSize.Medium"
-                          Variant="Variant.Flat" Style="width: 100%"
-                          Click="@(() => ExternalLogin(provider.Name))" />
-        }
-    </RadzenStack>
-}
+<RadzenStack Gap="4px">
+    <RadzenButton Text="@($"Đăng nhập với Facebook")"
+                  ButtonStyle="ButtonStyle.Info"
+                  Size="ButtonSize.Medium"
+                  Variant="Variant.Flat" Style="width: 100%"
+                  Click="@(() => ExternalLogin("Facebook"))" />
+    <RadzenButton Text="@($"Đăng nhập với Google")"
+                  ButtonStyle="ButtonStyle.Light"
+                  Size="ButtonSize.Medium"
+                  Variant="Variant.Flat" Style="width: 100%"
+                  Click="@(() => ExternalLogin("Google"))" />
+</RadzenStack>
+
 
 @code {
-    private List<ExternalLoginProvider> externalLogins = [];
-
     [Parameter]
     [SupplyParameterFromQuery]
     public string? ReturnUrl { get; set; }
-
-    protected override async Task OnInitializedAsync()
-    {
-        var httpClient = HttpClientFactory.CreateClient();
-        var baseUri = NavigationManager.BaseUri.TrimEnd('/');
-        var result = await httpClient.GetFromJsonAsync<List<ExternalLoginProvider>>($"{baseUri}/api/externallogins?returnUrl={Uri.EscapeDataString(ReturnUrl ?? "/")}");
-        externalLogins = result ?? [];
-
-    }
 
     private void ExternalLogin(string provider)
     {
