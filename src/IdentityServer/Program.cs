@@ -58,11 +58,6 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-builder.Services.AddHttpClient("IdentityServerClient", options =>
-{
-    options.BaseAddress = new Uri(builder.Configuration["Host"] ?? throw new ArgumentNullException("Host is not configured"));
-});
-
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents(options =>
     {
@@ -147,6 +142,7 @@ builder.Services.AddAuthentication(options =>
 
 var app = builder.Build();
 
+app.Services.MigrateDatabaseAsync().GetAwaiter().GetResult();
 
 if (!app.Environment.IsDevelopment())
 {

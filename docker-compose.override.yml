@@ -187,8 +187,13 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=8080
       - ASPNETCORE_HTTPS_PORTS=8081
-      - Host=http://identityserver:8080
       - ConnectionStrings__DefaultConnection=Host=postgres;Database=identityserver;Username=postgres;Password=postgres;Trust Server Certificate=true
+      - EmailOptions__Host=sandbox.smtp.mailtrap.io
+      - EmailOptions__Port=465
+      - EmailOptions__Username=0ba7a966fdcf21
+      - EmailOptions__Password=1839c74fea4b40
+      - EmailOptions__FromName=Fast Ecommerce
+      - EmailOptions__FromEmail=from@example.com
     ports:
       - "5000:8080"
       - "5001:8081"
@@ -197,6 +202,7 @@ services:
       - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
       - ${APPDATA}/ASP.NET/Https:/home/app/.aspnet/https:ro
       - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+      - ./data-protection-keys:/root/.aspnet/DataProtection-Keys
 
   mediaservice.api:
     environment:

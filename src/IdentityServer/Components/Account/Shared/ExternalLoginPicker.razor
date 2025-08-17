@@ -34,8 +34,9 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var httpClient = HttpClientFactory.CreateClient("IdentityServerClient");
-        var result = await httpClient.GetFromJsonAsync<List<ExternalLoginProvider>>($"/api/externallogins?returnUrl={Uri.EscapeDataString(ReturnUrl ?? "/")}");
+        var httpClient = HttpClientFactory.CreateClient();
+        var baseUri = NavigationManager.BaseUri.TrimEnd('/');
+        var result = await httpClient.GetFromJsonAsync<List<ExternalLoginProvider>>($"{baseUri}/api/externallogins?returnUrl={Uri.EscapeDataString(ReturnUrl ?? "/")}");
         externalLogins = result ?? [];
 
     }

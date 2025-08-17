@@ -169,29 +169,29 @@
 
         var uploadedRequests = new List<AddImageForProductRequest>();
 
-        foreach (var file in filesToUpload)
-        {
-            using var stream = file.OpenReadStream(MaxFileSizeInMB * 1024 * 1024);
-            using var ms = new MemoryStream();
-            await stream.CopyToAsync(ms);
-            var fileBytes = ms.ToArray();
+        // foreach (var file in filesToUpload)
+        // {
+        //     using var stream = file.OpenReadStream(MaxFileSizeInMB * 1024 * 1024);
+        //     using var ms = new MemoryStream();
+        //     await stream.CopyToAsync(ms);
+        //     var fileBytes = ms.ToArray();
 
-            var uploadResponse = await UploadService.UploadFileAsync(fileBytes, file.Name, file.ContentType);
-            if (uploadResponse.ResponseMessage.IsSuccessStatusCode)
-            {
-                var imageUrl = uploadResponse.GetContent();
+        //     var uploadResponse = await UploadService.UploadFileAsync(fileBytes, file.Name, file.ContentType);
+        //     if (uploadResponse.ResponseMessage.IsSuccessStatusCode)
+        //     {
+        //         var imageUrl = uploadResponse.GetContent();
 
-                uploadedRequests.Add(new AddImageForProductRequest
-                {
-                    ProductAttributeId = addRequest.ProductAttributeId,
-                    ProductAttributeValue = addRequest.ProductAttributeValue,
-                    ImageUrl = imageUrl,
-                    ImageAltText = Path.GetFileNameWithoutExtension(file.Name),
-                    IsThumbnail = false,
-                    SortOrder = 0 // có thể tuỳ chỉnh thứ tự
-                });
-            }
-        }
+        //         uploadedRequests.Add(new AddImageForProductRequest
+        //         {
+        //             ProductAttributeId = addRequest.ProductAttributeId,
+        //             ProductAttributeValue = addRequest.ProductAttributeValue,
+        //             ImageUrl = imageUrl,
+        //             ImageAltText = Path.GetFileNameWithoutExtension(file.Name),
+        //             IsThumbnail = false,
+        //             SortOrder = 0
+        //         });
+        //     }
+        // }
 
 
         if (!uploadedRequests.Any())
@@ -204,24 +204,24 @@
         bool anySuccess = false;
         foreach (var req in uploadedRequests)
         {
-            var response = await ProductService.a(ProductId, req);
-            if (response.IsSuccess)
-            {
-                anySuccess = true;
+            // var response = await ProductService.a(ProductId, req);
+            // if (response.IsSuccess)
+            // {
+            //     anySuccess = true;
 
-                var key = req.ProductAttributeId ?? Guid.Empty;
-                if (!imagesDict.ContainsKey(key))
-                {
-                    imagesDict[key] = new List<string>();
-                }
+            //     var key = req.ProductAttributeId ?? Guid.Empty;
+            //     if (!imagesDict.ContainsKey(key))
+            //     {
+            //         imagesDict[key] = new List<string>();
+            //     }
 
-                imagesDict[key].Add(req.ImageUrl);
-            }
-            else
-            {
-                var imageName = Path.GetFileNameWithoutExtension(req.ImageUrl);
-                await UploadService.DeleteFileAsync(imageName);
-            }
+            //     imagesDict[key].Add(req.ImageUrl);
+            // }
+            // else
+            // {
+            //     var imageName = Path.GetFileNameWithoutExtension(req.ImageUrl);
+            //     await UploadService.DeleteFileAsync(imageName);
+            // }
         }
 
         if (anySuccess)

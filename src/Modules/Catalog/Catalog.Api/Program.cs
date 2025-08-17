@@ -8,6 +8,7 @@ builder.AddSharedApi(builder.Configuration);
 
 var app = builder.Build();
 
+app.Services.MigrateCatalogDatabaseAsync().GetAwaiter().GetResult();
 
 app.UseSharedApi(builder.Configuration);
 

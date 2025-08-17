@@ -9,11 +9,6 @@ public static class DatabaseExtensions
     {
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<CatalogDbContext>();
-        context.Database.EnsureCreated();
-        if (context.Database.GetPendingMigrations().Any())
-        {
-            await context.Database.MigrateAsync();
-        }
-
+        await context.Database.MigrateAsync();
     }
 }
