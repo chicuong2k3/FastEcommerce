@@ -1,0 +1,421 @@
+@page "/admin/create-edit-product"
+@page "/admin/create-edit-product/{Id:guid}"
+@using System.Text.Json
+
+@inject INotifService NotifService
+@inject IValidator<CreateUpdateProductRequest> Validator
+@inject IProductAttributeService ProductAttributeService
+@inject ICategoryService CategoryService
+@inject IProductService ProductService
+@inject NavigationManager NavigationManager
+
+<RadzenCard>
+    <RadzenTemplateForm TItem="CreateUpdateProductRequest" Data="@Product" Submit="@Submit">
+        <RadzenStack>
+            <RadzenFieldset Text="Thông tin chung" AllowCollapse="true">
+                <RadzenRow>
+                    <RadzenColumn Size="10">
+                        <RadzenFormField Text="Tên" Variant="Radzen.Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%;">
+                            <ChildContent>
+                                <RadzenTextBox Name="Name" @bind-Value="Product.Name" />
+                            </ChildContent>
+                            <Helper>
+                                <FluentValidator TModel="CreateUpdateProductRequest" TValue="string"
+                                                 For="@(() => Product.Name)"
+                                                 Model="@Product"
+                                                 Validator="@Validator" />
+                            </Helper>
+                        </RadzenFormField>
+                    </RadzenColumn>
+                    <RadzenColumn Size="2">
+                        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="4px" Style="height: 100%">
+                            <RadzenCheckBox Name="IsSimple" @bind-Value="Product.IsSimple" />
+                            <RadzenLabel Text="Đơn giản" Component="IsSimple"></RadzenLabel>
+                        </RadzenStack>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="4">
+                        <RadzenFormField Text="Danh mục" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%">
+                            <ChildContent>
+                                <RadzenDropDown @bind-Value="Product.CategoryIds" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterDelay="100" Multiple="true" Data="@categories" TextProperty="Name" ValueProperty="Id" Placeholder="Chọn danh mục" AllowClear="true" Disabled="@(categories.Count() == 0)" />
+                            </ChildContent>
+                        </RadzenFormField>
+                    </RadzenColumn>
+
+                    @if (Product.IsSimple)
+                    {
+                        <RadzenColumn Size="3">
+                            <RadzenFormField Text="Sku" Variant="Radzen.Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%; ">
+                                <ChildContent>
+                                    <RadzenTextBox Name="Sku" @bind-Value="Product.Sku" />
+                                </ChildContent>
+                                <Helper>
+                                    <FluentValidator TModel="CreateUpdateProductRequest" TValue="string"
+                                                     For="@(() => Product.Sku)"
+                                                     Model="@Product"
+                                                     Validator="@Validator" />
+                                </Helper>
+                            </RadzenFormField>
+                        </RadzenColumn>
+                    }
+
+                    <RadzenColumn Size="@(Product.IsSimple ? 5 : 8)">
+                        <RadzenFormField Text="Slug" Variant="Radzen.Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%; ">
+                            <ChildContent>
+                                <RadzenTextBox Name="Slug" @bind-Value="Product.Slug" />
+                            </ChildContent>
+                            <Helper>
+                                <FluentValidator TModel="CreateUpdateProductRequest" TValue="string"
+                                                 For="@(() => Product.Slug)"
+                                                 Model="@Product"
+                                                 Validator="@Validator" />
+                            </Helper>
+                        </RadzenFormField>
+                    </RadzenColumn>
+
+                    @if (Product.IsSimple)
+                    {
+                        <RadzenColumn Size="3">
+                            <RadzenFormField Text="Giá gốc" Variant="Radzen.Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%; ">
+                                <ChildContent>
+                                    <RadzenNumeric Name="BasePrice" @bind-Value="Product.BasePrice" />
+                                </ChildContent>
+                                <Helper>
+                                    <FluentValidator TModel="CreateUpdateProductRequest" TValue="decimal?"
+                                                     For="@(() => Product.BasePrice)"
+                                                     Model="@Product"
+                                                     Validator="@Validator" />
+                                </Helper>
+                            </RadzenFormField>
+                        </RadzenColumn>
+                        <RadzenColumn Size="3">
+                            <RadzenFormField Text="Giá khuyến mãi" Variant="Radzen.Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%; ">
+                                <ChildContent>
+                                    <RadzenNumeric Name="SalePrice" @bind-Value="Product.SalePrice" />
+                                </ChildContent>
+                                <Helper>
+                                    <FluentValidator TModel="CreateUpdateProductRequest" TValue="decimal?"
+                                                     For="@(() => Product.SalePrice)"
+                                                     Model="@Product"
+                                                     Validator="@Validator" />
+                                </Helper>
+                            </RadzenFormField>
+                        </RadzenColumn>
+                        <RadzenColumn Size="3">
+                            <RadzenFormField Text="Khuyến mãi từ" Variant="Radzen.Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%; ">
+                                <ChildContent>
+                                    <RadzenDatePicker Name="SaleFrom" @bind-Value="Product.SaleFrom" />
+                                </ChildContent>
+                                <Helper>
+                                    <FluentValidator TModel="CreateUpdateProductRequest" TValue="DateTime?"
+                                                     For="@(() => Product.SaleFrom)"
+                                                     Model="@Product"
+                                                     Validator="@Validator" />
+                                </Helper>
+                            </RadzenFormField>
+                        </RadzenColumn>
+                        <RadzenColumn Size="3">
+                            <RadzenFormField Text="Khuyến mãi đến" Variant="Radzen.Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%; ">
+                                <ChildContent>
+                                    <RadzenDatePicker Name="SaleTo" @bind-Value="Product.SaleTo" />
+                                </ChildContent>
+                                <Helper>
+                                    <FluentValidator TModel="CreateUpdateProductRequest" TValue="DateTime?"
+                                                     For="@(() => Product.SaleTo)"
+                                                     Model="@Product"
+                                                     Validator="@Validator" />
+                                </Helper>
+                            </RadzenFormField>
+                        </RadzenColumn>
+                    }
+
+
+                    <RadzenColumn Size="12">
+
+                        <RadzenFormField Text="Mô tả" Variant="Radzen.Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%; ">
+                            <ChildContent>
+                                <RadzenHtmlEditor Name="Description" @bind-Value="Product.Description" Mode="Radzen.HtmlEditorMode.Design" Style="height: 300px;" ShowToolbar="true" Visible="true">
+                                </RadzenHtmlEditor>
+                            </ChildContent>
+                            <Helper>
+                                <FluentValidator TModel="CreateUpdateProductRequest" TValue="string"
+                                                 For="@(() => Product.Description)"
+                                                 Model="@Product"
+                                                 Validator="@Validator" />
+                            </Helper>
+                        </RadzenFormField>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenFieldset>
+
+
+            <RadzenFieldset Text="Thông tin SEO" AllowCollapse="true" Collapsed="true">
+                <RadzenRow>
+                    <RadzenColumn Size="4">
+                        <RadzenFormField Text="Tiêu đề meta" Variant="Radzen.Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%; ">
+                            <ChildContent>
+                                <RadzenTextBox Name="MetaTitle" @bind-Value="Product.MetaTitle" />
+                            </ChildContent>
+                            <Helper>
+                                <FluentValidator TModel="CreateUpdateProductRequest" TValue="string"
+                                                 For="@(() => Product.MetaTitle)"
+                                                 Model="@Product"
+                                                 Validator="@Validator" />
+                            </Helper>
+                        </RadzenFormField>
+                    </RadzenColumn>
+                    <RadzenColumn Size="8">
+                        <RadzenFormField Text="Các từ khóa meta" Variant="Radzen.Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%; ">
+                            <ChildContent>
+                                <RadzenTextBox Name="MetaKeywords" @bind-Value="Product.MetaKeywords" />
+                            </ChildContent>
+                            <Helper>
+                                <FluentValidator TModel="CreateUpdateProductRequest" TValue="string"
+                                                 For="@(() => Product.MetaKeywords)"
+                                                 Model="@Product"
+                                                 Validator="@Validator" />
+                            </Helper>
+                        </RadzenFormField>
+                    </RadzenColumn>
+                    <RadzenColumn Size="12">
+                        <RadzenFormField Text="Mô tả meta" Variant="Radzen.Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%; ">
+                            <ChildContent>
+                                <RadzenTextArea Name="MetaDescription" @bind-Value="Product.MetaDescription" />
+                            </ChildContent>
+                            <Helper>
+                                <FluentValidator TModel="CreateUpdateProductRequest" TValue="string"
+                                                 For="@(() => Product.MetaDescription)"
+                                                 Model="@Product"
+                                                 Validator="@Validator" />
+                            </Helper>
+                        </RadzenFormField>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenFieldset>
+
+            <RadzenFieldset Text="Thông tin khác" AllowCollapse="true" Collapsed="true">
+                <RadzenStack JustifyContent="JustifyContent.Center">
+
+                    @foreach (var attr in productAttributeValues)
+                    {
+                        <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center">
+                            <RadzenColumn Size="5">
+                                <RadzenFormField Text="Thuộc tính" Variant="Variant.Outlined" Style="width: 100%">
+                                    <ChildContent>
+                                        <RadzenDropDown Value="@attr.AttributeId" TValue="Guid?"
+                                                        Data="@GetAvailableAttributesForRow(attr)"
+                                                        TextProperty="DisplayName"
+                                                        ValueProperty="Id"
+                                                        Change="@(newAttrId => OnAttributeChanged(attr.AttributeId, newAttrId))"
+                                                        Placeholder="Chọn thuộc tính"
+                                                        AllowClear="true"
+                                                        Disabled="@(productAttributes.Count() == 0)" />
+                                    </ChildContent>
+                                </RadzenFormField>
+                            </RadzenColumn>
+
+                            <RadzenColumn Size="5">
+                                <RadzenFormField Text="Giá trị thuộc tính" Variant="Radzen.Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%;">
+                                    <ChildContent>
+                                        <RadzenTextBox @bind-Value="@attr.Value" />
+                                    </ChildContent>
+                                </RadzenFormField>
+                            </RadzenColumn>
+
+                            <RadzenColumn Size="2" Style="margin-top: 10px">
+                                <RadzenStack AlignItems="AlignItems.Center">
+                                    <RadzenButton Icon="close" Click="@(() => RemoveProductAttributeValue(attr))" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Flat" Size="ButtonSize.Small" />
+                                </RadzenStack>
+                            </RadzenColumn>
+                        </RadzenRow>
+                    }
+
+
+                    @if (availableProductAttributes.Any())
+                    {
+                        <RadzenButton Text="Thêm thuộc tính" Click="@AddProductAttributeValue" ButtonStyle="ButtonStyle.Success" Variant="Variant.Flat" Size="ButtonSize.Small" />
+                    }
+
+
+                </RadzenStack>
+            </RadzenFieldset>
+
+
+            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="8px">
+                <RadzenButton Text="Lưu thay đổi" ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Medium" Variant="Variant.Flat" />
+            </RadzenStack>
+        </RadzenStack>
+    </RadzenTemplateForm>
+</RadzenCard>
+
+
+@code {
+
+    public class ProductAttributeValueModel
+    {
+        public Guid AttributeId { get; set; }
+        public string Value { get; set; } = string.Empty;
+    }
+
+    [Parameter] public Guid? Id { get; set; }
+
+    [Parameter]
+    public CreateUpdateProductRequest Product { get; set; } = new();
+
+    private IEnumerable<CategoryReadModel> categories { get; set; } = [];
+
+    private IEnumerable<ProductAttributeReadModel> productAttributes = [];
+    private IEnumerable<ProductAttributeReadModel> availableProductAttributes => productAttributes.Where(a => !productAttributeValues.Any(av => av.AttributeId == a.Id));
+    private List<ProductAttributeValueModel> productAttributeValues = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        await LoadCategoriesAndAttributes();
+
+        if (Id.HasValue)
+        {
+            var response = await ProductService.GetProductAsync(Id.Value);
+            if (response.ResponseMessage.IsSuccessStatusCode)
+            {
+                var product = response.GetContent();
+
+                Product = new CreateUpdateProductRequest
+                {
+                    Name = product.Name,
+                    Sku = product.Sku,
+                    Slug = product.Slug,
+                    Description = product.Description,
+                    BrandId = product.BrandId,
+                    IsSimple = product.IsSimple,
+                    BasePrice = product.BasePrice,
+                    SalePrice = product.SalePrice,
+                    SaleFrom = product.SaleFrom,
+                    SaleTo = product.SaleTo,
+                    MetaTitle = product.MetaTitle,
+                    MetaKeywords = product.MetaKeywords,
+                    MetaDescription = product.MetaDescription,
+                    CategoryIds = product.CategoryIds
+                };
+
+                productAttributeValues = product.ProductAttributeValuePairs
+                    .Select(p => new ProductAttributeValueModel
+                    {
+                        AttributeId = p.AttributeId,
+                        Value = p.AttributeValue
+                    })
+                    .ToList();
+            }
+        }
+    }
+
+    private async Task LoadCategoriesAndAttributes()
+    {
+        var response = await ProductAttributeService.GetProductAttributesAsync();
+        if (response.ResponseMessage.IsSuccessStatusCode)
+        {
+            productAttributes = response.GetContent().Where(a => !a.IsOption);
+        }
+
+        var getCategoriesResponse = await CategoryService.GetCategoriesAsync(null);
+        if (getCategoriesResponse.ResponseMessage.IsSuccessStatusCode)
+        {
+            categories = getCategoriesResponse.GetContent();
+        }
+    }
+
+    private async Task Submit()
+    {
+        Product.ProductAttributeValuePairs = productAttributeValues
+            .Select(av => new ProductAttributeValuePair
+            {
+                ProductAttributeId = av.AttributeId,
+                ProductAttributeValue = av.Value
+            })
+            .ToList();
+
+        if (Id.HasValue)
+        {
+            var response = await ProductService.UpdateProductAsync(Id.Value, Product);
+            if (response.ResponseMessage.IsSuccessStatusCode)
+            {
+                NotifService.Success("Chỉnh sửa thành công");
+                NavigationManager.NavigateTo("/admin/products");
+            }
+            else
+            {
+                NotifService.Error($"Chỉnh sửa thất bại: {response.ResponseMessage}");
+            }
+        }
+        else
+        {
+            var response = await ProductService.CreateProductAsync(Product);
+            if (response.ResponseMessage.IsSuccessStatusCode)
+            {
+                NotifService.Success("Thêm thành công");
+                NavigationManager.NavigateTo("/admin/products");
+            }
+            else
+            {
+                NotifService.Error("Thêm thất bại");
+            }
+        }
+    }
+
+    private void AddProductAttributeValue()
+    {
+        var attr = availableProductAttributes.FirstOrDefault();
+        if (attr != null)
+        {
+            productAttributeValues.Add(new ProductAttributeValueModel
+            {
+                AttributeId = attr.Id,
+                Value = string.Empty
+            });
+        }
+    }
+
+    private void RemoveProductAttributeValue(ProductAttributeValueModel row)
+    {
+        productAttributeValues.Remove(row);
+    }
+
+    private IEnumerable<ProductAttributeReadModel> GetAvailableAttributesForRow(ProductAttributeValueModel row)
+    {
+        return productAttributes.Where(a =>
+            !productAttributeValues.Any(av => av.AttributeId == a.Id && av != row));
+    }
+
+    private void OnAttributeChanged(Guid oldId, object newId)
+    {
+        if (newId is Guid newAttrId && !productAttributeValues.Any(a => a.AttributeId == newAttrId))
+        {
+            var attrValuePair = productAttributeValues.FirstOrDefault(a => a.AttributeId == oldId);
+            if (attrValuePair != null)
+            {
+                attrValuePair.AttributeId = newAttrId;
+            }
+            else
+            {
+                productAttributeValues.Add(new ProductAttributeValueModel
+                {
+                    AttributeId = newAttrId,
+                    Value = string.Empty
+                });
+            }
+        }
+    }
+
+    private async Task HandleCreate()
+    {
+        var response = await ProductService.CreateProductAsync(Product);
+        if (response.ResponseMessage.IsSuccessStatusCode)
+        {
+            NotifService.Success("Thêm thành công");
+        }
+        else
+        {
+            NotifService.Error("Thêm thất bại");
+        }
+    }
+}

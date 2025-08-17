@@ -1,0 +1,358 @@
+﻿@page "/admin/products/{ProductId:guid}/images"
+@using System.Security.Cryptography
+
+@inject IProductAttributeService ProductAttributeService
+@inject IProductService ProductService
+@inject IUploadService UploadService
+@inject INotifService NotifService
+@inject DialogService DialogService
+
+<PageTitle>Quản lý ảnh sản phẩm</PageTitle>
+
+
+
+<RadzenCard>
+    <RadzenStack>
+        <RadzenText TextStyle="TextStyle.H5">
+            Thêm ảnh sản phẩm
+        </RadzenText>
+
+        @if (true)
+        {
+            <RadzenFormField Text="Thuộc tính" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%;">
+                <ChildContent>
+                    <RadzenDropDown Value="@addRequest.ProductAttributeId" ValueChanged="@((Guid? id) => HandleAttributeChange(id))" Data="@attributes" TextProperty="DisplayName" ValueProperty="Id" Placeholder="Chọn thuộc tính" Disabled="@(attributes.Count == 0)" />
+                </ChildContent>
+            </RadzenFormField>
+            <RadzenFormField Text="Giá trị thuộc tính" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%;">
+                <ChildContent>
+                    <RadzenDropDown @bind-Value="@addRequest.ProductAttributeValue" Data="@attributeValues" TextProperty="AttributeValue" ValueProperty="AttributeValue" Placeholder="Chọn giá trị" Disabled="@(attributeValues.Count == 0)" />
+                </ChildContent>
+            </RadzenFormField>
+        }
+
+        <RadzenFormField Text="Ảnh" Variant="Variant.Outlined">
+            <ChildContent>
+                <DragAndDropFileUpload Disabled="@isUploading" Multiple="true" Accept="images/*" />
+            </ChildContent>
+        </RadzenFormField>
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="8px" Style="margin-top: 8px;">
+            <RadzenButton Text="Thêm ảnh" ButtonStyle="ButtonStyle.Primary" Variant="Variant.Flat" Click="@SubmitAddImages" Disabled="@(isUploading || isLoading)" />
+        </RadzenStack>
+    </RadzenStack>
+</RadzenCard>
+
+<!-- Existing Images -->
+<RadzenCard Style="margin: 8px 0;">
+    <RadzenStack>
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+            <RadzenText TextStyle="TextStyle.H5">
+                Danh sách ảnh
+            </RadzenText>
+            <RadzenButton Text="Xoá ảnh đã chọn" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="ShowDeleteModal" Disabled="@(!selectedImageUrlsDict.Any(kvp => kvp.Value.Any()))" />
+        </RadzenStack>
+        @if (imagesDict.Any())
+        {
+            @foreach (var kvp in imagesDict)
+            {
+                @* var attributeValue = attributeValues.FirstOrDefault(x => x.AttributeValue == kvp.Key);
+                        if (attributeValue != null)
+                        {
+                            <RadzenStack>
+                                <RadzenText TextStyle="TextStyle.H6">
+                                    Giá trị thuộc tính: @attributeValue.AttributeValue
+                                </RadzenText>
+                                @if (kvp.Value.Any())
+                                {
+                                    <RadzenRow Gap="8px">
+                                        @foreach (var imageUrl in kvp.Value)
+                                        {
+                                            <RadzenColumn SizeSM="4" SizeMD="3" SizeLG="2">
+                                                <div style="position: relative;">
+                                                    <RadzenImage Path="@imageUrl" AlternateText="Ảnh sản phẩm" Style="width: 100%; height: auto;" />
+                                                    <RadzenCheckBox TriState="false" TValue="bool" Value="@(selectedImageUrlsDict.ContainsKey(kvp.Key) && selectedImageUrlsDict[kvp.Key].Contains(imageUrl))"
+                                                                    Change="@((bool value) => OnImageSelectionChanged(value, kvp.Key, imageUrl))"
+                                                                    Style="position: absolute; top: 4px; right: 4px;" />
+                                                </div>
+                                            </RadzenColumn>
+                                        }
+                                    </RadzenRow>
+                                }
+                                else
+                                {
+                                    <RadzenText TextStyle="TextStyle.Body2">
+                                        Không có ảnh nào cho giá trị thuộc tính này.
+                                    </RadzenText>
+                                }
+                            </RadzenStack>
+                        } *@
+            }
+        }
+        else
+        {
+            <RadzenText TextStyle="TextStyle.Body2">
+                Không có ảnh nào được tải lên cho sản phẩm này.
+            </RadzenText>
+        }
+    </RadzenStack>
+</RadzenCard>
+
+@code {
+    [Parameter]
+    public Guid ProductId { get; set; }
+
+    private Dictionary<Guid, List<string>> imagesDict = new();
+    private List<AttributeValueReadModel> attributeValues = new();
+    private AddImageForProductRequest addRequest = new();
+    private List<ProductAttributeReadModel> attributes = new();
+    private Dictionary<Guid, List<string>> selectedImageUrlsDict = new();
+    private const long MaxFileSizeInMB = 10;
+    private bool isUploading = false;
+    private bool isLoading = false;
+
+    private record ImagePreview(Guid Id, string Url);
+    private record ImageToUpload(Guid Id, byte[] FileBytes, string FileType);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var response = await ProductAttributeService.GetProductAttributesAsync();
+        if (response.ResponseMessage.IsSuccessStatusCode)
+        {
+            attributes = response.GetContent().ToList();
+        }
+
+        foreach (var attributeValue in attributeValues)
+        {
+            // var response3 = await ProductService.GetImagesAsync(ProductId, new GetImagesForProductRequest()
+            // {
+            //     AttributeValueId = attributeValue.AttributeValueId
+            // });
+            // if (response3.IsSuccess)
+            // {
+            //     imagesDict[attributeValue.AttributeValueId] = response3.Value.ToList();
+            // }
+        }
+    }
+
+    private async Task LoadAttributeValues(Guid attributeId)
+    {
+        var response = await ProductAttributeService.GetAttributeValuesAsync(attributeId);
+        if (response.ResponseMessage.IsSuccessStatusCode)
+        {
+            attributeValues = response.GetContent().ToList();
+            addRequest.ProductAttributeValue = null;
+        }
+        else
+        {
+            attributeValues.Clear();
+            addRequest.ProductAttributeValue = null;
+        }
+    }
+
+    private async Task HandleAttributeChange(Guid? attributeId)
+    {
+        addRequest.ProductAttributeId = attributeId ?? Guid.Empty;
+        if (attributeId.HasValue)
+        {
+            await LoadAttributeValues(attributeId.Value);
+        }
+        else
+        {
+            attributeValues.Clear();
+            addRequest.ProductAttributeValue = null;
+        }
+    }
+
+    private async Task SubmitAddImages()
+    {
+        isLoading = true;
+
+        var uploadedRequests = new List<AddImageForProductRequest>();
+
+        foreach (var file in filesToUpload)
+        {
+            using var stream = file.OpenReadStream(MaxFileSizeInMB * 1024 * 1024);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            var fileBytes = ms.ToArray();
+
+            var uploadResponse = await UploadService.UploadFileAsync(fileBytes, file.Name, file.ContentType);
+            if (uploadResponse.ResponseMessage.IsSuccessStatusCode)
+            {
+                var imageUrl = uploadResponse.GetContent();
+
+                uploadedRequests.Add(new AddImageForProductRequest
+                {
+                    ProductAttributeId = addRequest.ProductAttributeId,
+                    ProductAttributeValue = addRequest.ProductAttributeValue,
+                    ImageUrl = imageUrl,
+                    ImageAltText = Path.GetFileNameWithoutExtension(file.Name),
+                    IsThumbnail = false,
+                    SortOrder = 0 // có thể tuỳ chỉnh thứ tự
+                });
+            }
+        }
+
+
+        if (!uploadedRequests.Any())
+        {
+            NotifService.Error("Không có ảnh nào được tải lên thành công.");
+            isLoading = false;
+            return;
+        }
+
+        bool anySuccess = false;
+        foreach (var req in uploadedRequests)
+        {
+            var response = await ProductService.a(ProductId, req);
+            if (response.IsSuccess)
+            {
+                anySuccess = true;
+
+                var key = req.ProductAttributeId ?? Guid.Empty;
+                if (!imagesDict.ContainsKey(key))
+                {
+                    imagesDict[key] = new List<string>();
+                }
+
+                imagesDict[key].Add(req.ImageUrl);
+            }
+            else
+            {
+                var imageName = Path.GetFileNameWithoutExtension(req.ImageUrl);
+                await UploadService.DeleteFileAsync(imageName);
+            }
+        }
+
+        if (anySuccess)
+        {
+            await ResetForm();
+            NotifService.Success("Thêm ảnh thành công");
+        }
+        else
+        {
+            NotifService.Error("Thêm ảnh thất bại");
+        }
+
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task ShowDeleteModal()
+    {
+        var ok = await DialogService.OpenAsync<DeleteConfirmationModal>("Xoá ảnh",
+            new Dictionary<string, object>
+            {
+                { "ChildContent", GetDeleteDialogContent() }
+            });
+
+        if (ok == true)
+        {
+            await DeleteImages();
+        }
+    }
+
+    private RenderFragment GetDeleteDialogContent()
+    {
+        return __builder =>
+        {
+            <RadzenText TextStyle="TextStyle.H6">
+                Bạn có chắc chắn muốn xóa những ảnh đã chọn không?
+            </RadzenText>
+            <RadzenText TextStyle="TextStyle.Body2">
+                Hành động này không thể hoàn tác.
+            </RadzenText>
+        };
+    }
+
+    private async Task DeleteImages()
+    {
+        if (!selectedImageUrlsDict.Any(kvp => kvp.Value.Any()))
+        {
+            return;
+        }
+
+        isLoading = true;
+        StateHasChanged();
+
+        var deleteTasks = new List<Task<(Guid AttributeValueId, RestEase.Response<object> Response)>>();
+        var imagesToDelete = new Dictionary<Guid, List<string>>();
+
+        foreach (var kvp in selectedImageUrlsDict)
+        {
+            if (kvp.Value.Any())
+            {
+                imagesToDelete[kvp.Key] = kvp.Value.ToList();
+                deleteTasks.Add(
+                    ProductService.RemoveImagesAsync(ProductId, new RemoveImagesFromProductRequest()
+                    {
+                        ImageUrls = kvp.Value
+                    }).ContinueWith(t => (kvp.Key, t.Result))
+                );
+            }
+        }
+
+        var responses = await Task.WhenAll(deleteTasks);
+        bool anySuccess = false;
+        bool anyFailure = false;
+        foreach (var (attributeValueId, response) in responses)
+        {
+            if (response.ResponseMessage.IsSuccessStatusCode)
+            {
+                anySuccess = true;
+                if (imagesDict.ContainsKey(attributeValueId))
+                {
+                    imagesDict[attributeValueId].RemoveAll(url => imagesToDelete[attributeValueId].Contains(url));
+                    selectedImageUrlsDict.Remove(attributeValueId);
+                }
+            }
+            else
+            {
+                anyFailure = true;
+            }
+        }
+
+        if (anySuccess && !anyFailure)
+        {
+            NotifService.Success("Xóa ảnh thành công");
+        }
+        else if (anySuccess && anyFailure)
+        {
+            NotifService.Error("Xóa một số ảnh thất bại");
+        }
+        else
+        {
+            NotifService.Error("Xóa ảnh thất bại");
+        }
+
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private void OnImageSelectionChanged(bool isChecked, Guid attributeValueId, string imageUrl)
+    {
+        if (!selectedImageUrlsDict.ContainsKey(attributeValueId))
+        {
+            selectedImageUrlsDict[attributeValueId] = new List<string>();
+        }
+
+        if (isChecked)
+        {
+            if (!selectedImageUrlsDict[attributeValueId].Contains(imageUrl))
+            {
+                selectedImageUrlsDict[attributeValueId].Add(imageUrl);
+            }
+        }
+        else
+        {
+            selectedImageUrlsDict[attributeValueId].Remove(imageUrl);
+        }
+        StateHasChanged();
+    }
+
+    private async Task ResetForm()
+    {
+        addRequest = new();
+        await InvokeAsync(StateHasChanged);
+    }
+}

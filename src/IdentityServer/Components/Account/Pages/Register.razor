@@ -1,0 +1,222 @@
+﻿@page "/Account/Register"
+
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject NavigationManager NavigationManager
+@inject IValidator<RegisterInputModel> Validator
+@inject IEmailService EmailService
+@inject INotifService NotifService
+
+<PageTitle>Đăng ký</PageTitle>
+
+<RadzenRow AlignItems="AlignItems.Center" Style="height: 100vh;">
+    <RadzenColumn Size="10" Offset="1" SizeMD="4" OffsetMD="4">
+        <RadzenCard Variant="Variant.Outlined">
+            <RadzenText TextStyle="TextStyle.H5" TextAlign="TextAlign.Center">
+                ĐĂNG KÝ
+            </RadzenText>
+            <RadzenStack JustifyContent="JustifyContent.Center">
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <RadzenAlert AlertStyle="AlertStyle.Danger" Variant="Variant.Flat" Shade="Shade.Lighter" AllowClose="false">
+                        @errorMessage
+                    </RadzenAlert>
+                }
+
+                @if (ConfirmEmailMessage != null)
+                {
+                    <RadzenAlert AlertStyle="AlertStyle.Success" Variant="Variant.Flat" Shade="Shade.Lighter" AllowClose="false">
+                        @ConfirmEmailMessage
+                    </RadzenAlert>
+                }
+
+
+                <RadzenTemplateForm TItem="RegisterInputModel" Data="@Input" Submit="RegisterUser">
+                    <RadzenStack Gap="12px">
+                        <RadzenFormField Text="Email" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%;">
+                            <ChildContent>
+                                <RadzenTextBox Name="Email" @bind-Value="Input.Email" />
+                            </ChildContent>
+                            <Helper>
+                                <FluentValidator TModel="RegisterInputModel" TValue="string"
+                                                 For="@(() => Input.Email)"
+                                                 Model="@Input"
+                                                 Validator="@Validator" />
+                            </Helper>
+                        </RadzenFormField>
+                        <RadzenFormField Text="Mật khẩu" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%;">
+                            <ChildContent>
+                                <RadzenPassword Name="Password" @bind-Value="Input.Password" />
+                            </ChildContent>
+                            <Helper>
+                                <FluentValidator TModel="RegisterInputModel" TValue="string"
+                                                 For="@(() => Input.Password)"
+                                                 Model="@Input"
+                                                 Validator="@Validator" />
+                            </Helper>
+                        </RadzenFormField>
+                        <RadzenFormField Text="Xác nhận mật khẩu" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%;">
+                            <ChildContent>
+                                <RadzenPassword Name="ConfirmPassword" @bind-Value="Input.ConfirmPassword" />
+                            </ChildContent>
+                            <Helper>
+                                <FluentValidator TModel="RegisterInputModel" TValue="string"
+                                                 For="@(() => Input.ConfirmPassword)"
+                                                 Model="@Input"
+                                                 Validator="@Validator" />
+                            </Helper>
+                        </RadzenFormField>
+
+
+                        <RadzenButton Text="ĐĂNG KÝ" IsBusy="isSubmitting"
+                                      ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Medium" Variant="Variant.Flat" Style="width: 100%" />
+                    </RadzenStack>
+
+                </RadzenTemplateForm>
+
+                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.Center">
+                    <RadzenText TextStyle="TextStyle.Subtitle2">
+                        Đã có tài khoản?
+                        <TextButton Text="Đăng nhập" Path="@($"/Account/Login?ReturnUrl={Uri.EscapeDataString(ReturnUrl ?? "/")}")" />
+                    </RadzenText>
+                </RadzenStack>
+
+                <Divider Text="Đăng nhập với" />
+
+                <ExternalLoginPicker />
+            </RadzenStack>
+
+
+
+        </RadzenCard>
+    </RadzenColumn>
+</RadzenRow>
+
+@code {
+    private IEnumerable<IdentityError>? identityErrors;
+
+    private RegisterInputModel Input { get; set; } = new();
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
+
+    private RenderFragment? ConfirmEmailMessage;
+
+    private string? errorMessage => identityErrors is null ? null : identityErrors.Select(error => error.Description).FirstOrDefault();
+
+    private bool isSubmitting = false;
+
+    public async Task RegisterUser()
+    {
+        isSubmitting = true;
+
+        ConfirmEmailMessage = null;
+
+        var user = new ApplicationUser()
+        {
+            Email = Input.Email,
+            UserName = Input.Email
+        };
+
+        var result = await UserManager.CreateAsync(user, Input.Password);
+
+        if (!result.Succeeded)
+        {
+            identityErrors = result.Errors;
+            isSubmitting = false;
+            return;
+        }
+
+        isSubmitting = false;
+
+        NotifService.Success("Tài khoản đã được tạo!");
+
+
+        if (UserManager.Options.SignIn.RequireConfirmedEmail)
+        {
+            var userId = await UserManager.GetUserIdAsync(user);
+            var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
+            code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+            var callbackUrl = NavigationManager.GetUriWithQueryParameters(
+                NavigationManager.ToAbsoluteUri("Account/ConfirmEmail").AbsoluteUri,
+                new Dictionary<string, object?> { ["userId"] = userId, ["code"] = code, ["returnUrl"] = ReturnUrl });
+
+            var content = $"<a href='{callbackUrl}'>Xác nhận email</a>";
+            var success = await EmailService.SendEmailAsync(user.UserName!, user.Email!, "Xác nhận tài khoản", content);
+
+            if (!success)
+            {
+                NotifService.Error("Có lỗi xảy ra. Vui lòng thử lại sau!");
+                return;
+            }
+
+            ConfirmEmailMessage =@<span>
+                Email xác thực đã được gửi đến bạn!
+                <TextButton Text="Nhấn vào đây để gửi lại email xác thực." OnClick="@ResendEmailConfirmation"></TextButton>
+            </span>
+            ;
+        }
+
+    }
+
+    private async Task ResendEmailConfirmation()
+    {
+        ConfirmEmailMessage =@<span>
+            Đang gửi lại email xác thực...
+        </span>;
+
+        var user = await UserManager.FindByEmailAsync(Input.Email!);
+        if (user is null)
+        {
+            return;
+        }
+
+        var userId = await UserManager.GetUserIdAsync(user);
+        var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
+        code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+        var callbackUrl = NavigationManager.GetUriWithQueryParameters(
+            NavigationManager.ToAbsoluteUri("Account/ConfirmEmail").AbsoluteUri,
+            new Dictionary<string, object?> { ["userId"] = userId, ["code"] = code, ["returnUrl"] = ReturnUrl });
+
+        var content = $"<a href='{callbackUrl}'>Xác nhận email</a>";
+        var success = await EmailService.SendEmailAsync(user.UserName!, user.Email!, "Xác nhận tài khoản", content);
+
+        if (!success)
+        {
+            NotifService.Error("Có lỗi xảy ra. Vui lòng thử lại sau!");
+            return;
+        }
+
+        ConfirmEmailMessage =@<span>
+            Email xác thực đã được gửi đến bạn!
+            <TextButton Text="Nhấn vào đây để gửi lại email xác thực." OnClick="@ResendEmailConfirmation"></TextButton>
+        </span>;
+    }
+
+    public sealed class RegisterInputModel
+    {
+        public string Email { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+        public string ConfirmPassword { get; set; } = string.Empty;
+    }
+
+
+    public class RegisterInputModelValidator : AbstractValidator<RegisterInputModel>
+    {
+        public RegisterInputModelValidator()
+        {
+            RuleFor(x => x.Email)
+                .NotEmpty().WithMessage("Email không được để trống.")
+                .EmailAddress().WithMessage("Email không hợp lệ.");
+
+            RuleFor(x => x.Password)
+                .NotEmpty().WithMessage("Mật khẩu không được để trống.")
+                .Length(6, 100).WithMessage("Mật khẩu phải có độ dài từ 6 đến 100 ký tự.");
+
+            RuleFor(x => x.ConfirmPassword)
+                .Equal(x => x.Password).WithMessage("Mật khẩu xác nhận không khớp với mật khẩu.");
+        }
+    }
+
+}

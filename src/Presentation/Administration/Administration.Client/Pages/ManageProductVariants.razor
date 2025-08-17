@@ -1,0 +1,377 @@
+@page "/admin/products/{ProductId:guid}/variants"
+@using System.Globalization
+
+@inject IProductAttributeService ProductAttributeService
+@inject IProductService ProductService
+@inject NavigationManager NavigationManager
+@inject INotifService NotifService
+@inject DialogService DialogService
+@inject IValidator<AddVariantRequest> Validator
+
+<PageTitle>Quản lý biến thể</PageTitle>
+
+<!-- Existing Variants -->
+<RadzenCard Style="margin: 8px 0;">
+    <RadzenStack>
+        <RadzenText TextStyle="TextStyle.H5" Style="margin: 0;">
+            Biến thể hiện có
+        </RadzenText>
+        <VariantsTable ProductId="@ProductId" />
+    </RadzenStack>
+</RadzenCard>
+
+<!-- Add New Variant -->
+<RadzenCard Style="margin-top: 8px;">
+    <RadzenStack>
+        <RadzenText TextStyle="TextStyle.H5" Style="margin: 0;">
+            Thêm biến thể mới
+        </RadzenText>
+
+        <RadzenTemplateForm TItem="AddVariantRequest" Data="@commonVariant" Submit="@GenerateVariants">
+            <RadzenRow>
+                <RadzenColumn SizeSM="6" SizeMD="3">
+                    <RadzenFormField Text="Giá gốc" Variant="Radzen.Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%">
+                        <ChildContent>
+                            <RadzenNumeric @bind-Value="commonVariant.BasePrice" Name="BasePrice" />
+                        </ChildContent>
+                        <Helper>
+                            <FluentValidator TModel="AddVariantRequest" TValue="decimal"
+                                             For="@(() => commonVariant.BasePrice)"
+                                             Model="@commonVariant"
+                                             Validator="@Validator" />
+                        </Helper>
+                    </RadzenFormField>
+                </RadzenColumn>
+                <RadzenColumn SizeSM="6" SizeMD="3">
+                    <RadzenFormField Text="Giá khuyến mãi" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%">
+                        <ChildContent>
+                            <RadzenNumeric @bind-Value="commonVariant.SalePrice" Name="SalePrice" />
+                        </ChildContent>
+                        <Helper>
+                            <FluentValidator TModel="AddVariantRequest" TValue="decimal?"
+                                             For="@(() => commonVariant.SalePrice)"
+                                             Model="@commonVariant"
+                                             Validator="@Validator" />
+                        </Helper>
+                    </RadzenFormField>
+
+                </RadzenColumn>
+                <RadzenColumn SizeSM="6" SizeMD="2">
+                </RadzenColumn>
+
+            </RadzenRow>
+            <RadzenRow>
+                <RadzenColumn Size="6">
+                    <RadzenFormField Text="Thời gian bắt đầu khuyến mãi" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%">
+                        <ChildContent>
+                            <RadzenDatePicker @bind-Value="commonVariant.SaleFrom" Name="SaleFrom" DateFormat="dd/MM/yyyy" AllowClear="true" />
+                        </ChildContent>
+                        <Helper>
+                            <FluentValidator TModel="AddVariantRequest" TValue="DateTime?"
+                                             For="@(() => commonVariant.SaleFrom)"
+                                             Model="@commonVariant"
+                                             Validator="@Validator" />
+                        </Helper>
+                    </RadzenFormField>
+                </RadzenColumn>
+                <RadzenColumn Size="6">
+                    <RadzenFormField Text="Thời gian kết thúc khuyến mãi" Variant="Radzen.Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%">
+                        <ChildContent>
+                            <RadzenDatePicker @bind-Value="commonVariant.SaleTo" Name="SaleTo" DateFormat="dd/MM/yyyy" AllowClear="true" />
+                        </ChildContent>
+                    </RadzenFormField>
+                </RadzenColumn>
+            </RadzenRow>
+            <RadzenLabel Text="Thuộc tính sản phẩm" />
+            @foreach (var attr in attributes)
+            {
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                    <RadzenFormField Text="@attr.Name.CapitalizeFirstLetterOfFirstWord()" Variant="Variant.Outlined">
+                        <ChildContent>
+                            @if (attributeFilters.TryGetValue(attr.Id, out var filter) && filter.PossibleValues.Any())
+                            {
+                                <RadzenDropDown Multiple="true" @bind-Value="@filter.SelectedValues" Data="@filter.PossibleValues" Placeholder="Chọn giá trị" Style="width: 100%;" Chips="true" />
+                            }
+                        </ChildContent>
+                    </RadzenFormField>
+
+                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+                        <RadzenButton Icon="add" ButtonStyle="ButtonStyle.Primary" Variant="Variant.Flat" Click="@(() => ShowAddProductAttributeValueDialog(attr))" class="rz-border-radius-10" />
+                    </RadzenStack>
+
+                </RadzenStack>
+
+            }
+
+            <RadzenButton Text="Tạo các biến thể" ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary" Variant="Variant.Flat" />
+
+
+
+        </RadzenTemplateForm>
+
+
+        @if (generatedVariants.Any())
+        {
+            <RadzenDataGrid Data="@generatedVariants" TItem="AddVariantRequest" AllowSorting="true" AllowFiltering="false" AllowPaging="false">
+                <Columns>
+                    <RadzenDataGridColumn TItem="AddVariantRequest" Title="Biến thể" Sortable="false">
+                        <Template Context="variant">
+                            <RadzenStack Gap="2px">
+                                @foreach (var displayPart in GetVariantDisplay(variant))
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Info">@displayPart</RadzenBadge>
+                                }
+                            </RadzenStack>
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="AddVariantRequest" Property="Sku" Title="SKU" />
+                    <RadzenDataGridColumn TItem="AddVariantRequest" Property="BasePrice" Title="Giá">
+                        <Template Context="variant">
+                            @variant.BasePrice
+                        </Template>
+                    </RadzenDataGridColumn>
+                    @* <RadzenDataGridColumn TItem="AddVariantRequest" Property="Quantity" Title="Số lượng" /> *@
+                    <RadzenDataGridColumn TItem="AddVariantRequest" Property="SalePrice" Title="Giá khuyến mãi">
+                        <Template Context="variant">
+                            @(variant.SalePrice?.ToString("C", CultureInfo.GetCultureInfo("vi-VN")) ?? "N/A")
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="AddVariantRequest" Property="SaleStartDate" Title="Thời gian khuyến mãi" Sortable="false">
+                        <Template Context="variant">
+                            @if (variant.SaleFrom.HasValue && variant.SaleTo.HasValue)
+                            {
+                                <span>@variant.SaleFrom.Value.ToString("dd/MM/yyyy") - @variant.SaleTo.Value.ToString("dd/MM/yyyy")</span>
+                            }
+                            else
+                            {
+                                <span>N/A</span>
+                            }
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="AddVariantRequest" Title="Hành động" Sortable="false" Filterable="false">
+                        <Template Context="variant">
+                            <RadzenButton Text="Chỉnh sửa" ButtonStyle="ButtonStyle.Warning" Size="ButtonSize.Small" Variant="Variant.Flat" Click="@(() => ShowEditVariantModal(variant))" />
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        }
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="8px" Style="margin-top: 8px;">
+            <RadzenButton Text="Thêm các biến thể" ButtonStyle="ButtonStyle.Primary" Variant="Variant.Flat" Click="Submit" />
+        </RadzenStack>
+    </RadzenStack>
+</RadzenCard>
+
+@code {
+    [Parameter] public Guid ProductId { get; set; }
+
+    private class AttributeFilter
+    {
+        public List<string> PossibleValues { get; set; } = new();
+        public List<string> SelectedValues { get; set; } = new();
+    }
+
+    private List<ProductAttributeReadModel> attributes = new();
+    private Dictionary<Guid, AttributeFilter> attributeFilters = new();
+    private AddVariantRequest commonVariant = new();
+    private List<AddVariantRequest> generatedVariants = new();
+    private bool showEditModal = false;
+    private AddVariantRequest editingVariant = new();
+
+    private AddValueForProductAttributeRequest addValueForProductAttributeRequest = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAttributesAsync();
+        attributeFilters = attributes.ToDictionary(
+            attr => attr.Id,
+            attr => new AttributeFilter
+            {
+                PossibleValues = new()
+            }
+        );
+
+        foreach (var attr in attributes)
+        {
+            var response = await ProductAttributeService.GetAttributeValuesAsync(attr.Id);
+            if (response.ResponseMessage.IsSuccessStatusCode)
+            {
+                attributeFilters[attr.Id].PossibleValues = response.GetContent()
+                    .Select(av => av.AttributeValue)
+                    .ToList();
+            }
+        }
+    }
+
+    private async Task LoadAttributesAsync()
+    {
+        var response = await ProductAttributeService.GetProductAttributesAsync();
+        if (response.ResponseMessage.IsSuccessStatusCode)
+        {
+            attributes = response.GetContent().Where(a => a.IsOption).ToList();
+        }
+    }
+
+    private void GenerateVariants()
+    {
+        if (commonVariant == null)
+        {
+            NotifService.Error("Vui lòng nhập thông tin biến thể chung trước khi tạo biến thể");
+            return;
+        }
+
+        if (attributeFilters.Count() == 0)
+        {
+            NotifService.Error("Vui lòng chọn thuộc tính trước khi tạo biến thể");
+            return;
+        }
+
+        var existingNewVariants = generatedVariants.ToDictionary(
+            v => string.Join("|", v.ProductAttributeValuePairs.Select(pair => pair.ProductAttributeValue).OrderBy(val => val)),
+            v => v
+        );
+
+        generatedVariants.Clear();
+        var combinations = GetAttributeCombinations();
+        foreach (var combo in combinations)
+        {
+            var attributeValues = combo.Values.OrderBy(val => val).ToList();
+            var key = string.Join("|", attributeValues);
+            var variant = existingNewVariants.ContainsKey(key)
+                ? existingNewVariants[key]
+                : new AddVariantRequest
+                {
+                    BasePrice = commonVariant.BasePrice,
+                    SalePrice = commonVariant.SalePrice,
+                    SaleFrom = commonVariant.SaleFrom,
+                    SaleTo = commonVariant.SaleTo,
+                    ProductAttributeValuePairs = attributeValues.Select((value, index) => new ProductAttributeValuePair
+                    {
+                        ProductAttributeId = attributes[index].Id,
+                        ProductAttributeValue = value
+                    }).ToList()
+                };
+            generatedVariants.Add(variant);
+        }
+    }
+
+    private List<Dictionary<Guid, string>> GetAttributeCombinations()
+    {
+        var combinations = new List<Dictionary<Guid, string>> { new() };
+        foreach (var filter in attributeFilters)
+        {
+            if (!filter.Value.SelectedValues.Any()) continue;
+            var newCombinations = new List<Dictionary<Guid, string>>();
+            foreach (var value in filter.Value.SelectedValues)
+            {
+                foreach (var combo in combinations)
+                {
+                    var newCombo = new Dictionary<Guid, string>(combo) { { filter.Key, value } };
+                    newCombinations.Add(newCombo);
+                }
+            }
+            combinations = newCombinations;
+        }
+
+        return combinations;
+    }
+
+    private IEnumerable<string> GetVariantDisplay(AddVariantRequest variant)
+    {
+        var displayParts = variant.ProductAttributeValuePairs
+            .OrderBy(pair => pair.ProductAttributeId)
+            .Select(pair => $"{attributes.FirstOrDefault(a => a.Id == pair.ProductAttributeId)?.Name}: {pair.ProductAttributeValue}");
+        return displayParts;
+    }
+
+    private async Task ShowAddProductAttributeValueDialog(ProductAttributeReadModel productAttribute)
+    {
+        var ok = await DialogService.OpenAsync<AddProductAttributeValueModal>($"Thêm giá trị cho thuộc tính '{productAttribute.DisplayName}'",
+        new Dictionary<string, object>()
+        {
+            { "AttributeValue", addValueForProductAttributeRequest }
+        });
+
+        if (ok == true)
+        {
+            var response = await ProductAttributeService.AddValueToAttributeAsync(productAttribute.Id, addValueForProductAttributeRequest);
+            if (response.ResponseMessage.IsSuccessStatusCode)
+            {
+                attributeFilters[productAttribute.Id].PossibleValues.Add(addValueForProductAttributeRequest.ProductAttributeValue);
+
+                NotifService.Success("Thêm thành công");
+            }
+            else
+            {
+                NotifService.Error("Thêm thất bại");
+            }
+        }
+    }
+
+    private async Task ShowEditVariantModal(AddVariantRequest variant)
+    {
+        var ok = await DialogService.OpenAsync<EditVariantModal>("Chỉnh sửa biến thể",
+            new Dictionary<string, object>
+            {
+                { "EditingVariant", variant }
+            });
+
+        if (ok == true)
+        {
+            var index = generatedVariants.FindIndex(v =>
+                v.ProductAttributeValuePairs.Count == editingVariant.ProductAttributeValuePairs.Count &&
+                !v.ProductAttributeValuePairs
+                .OrderBy(p => p.ProductAttributeId)
+                .Zip(editingVariant.ProductAttributeValuePairs.OrderBy(p => p.ProductAttributeId))
+                .Any(pair => pair.First.ProductAttributeId != pair.Second.ProductAttributeId ||
+                     !string.Equals(pair.First.ProductAttributeValue, pair.Second.ProductAttributeValue, StringComparison.OrdinalIgnoreCase)));
+
+            if (index >= 0)
+            {
+                generatedVariants[index] = new AddVariantRequest
+                {
+                    BasePrice = editingVariant.BasePrice,
+                    SalePrice = editingVariant.SalePrice,
+                    SaleFrom = editingVariant.SaleFrom,
+                    SaleTo = editingVariant.SaleTo
+                };
+            }
+        }
+    }
+
+
+    private async Task Submit()
+    {
+        if (!generatedVariants.Any())
+        {
+            NotifService.Error("Vui lòng chọn ít nhất một giá trị thuộc tính");
+            return;
+        }
+
+        var addVariantTasks = new List<Task<RestEase.Response<object>>>();
+
+        foreach (var variant in generatedVariants)
+        {
+            addVariantTasks.Add(ProductService.AddVariantAsync(ProductId, variant));
+
+        }
+
+        var responses = await Task.WhenAll(addVariantTasks);
+        var successCount = responses.Count(r => r.ResponseMessage.IsSuccessStatusCode);
+        if (successCount == addVariantTasks.Count)
+        {
+            NotifService.Success("Thêm biến thể thành công");
+        }
+        else
+        {
+            NotifService.Error($"Có {addVariantTasks.Count - successCount} biến thể không được thêm. Vui lòng kiểm tra lại.");
+        }
+
+        generatedVariants.Clear();
+        attributeFilters = attributes.ToDictionary(
+            attr => attr.Id,
+            attr => new AttributeFilter { PossibleValues = attributeFilters[attr.Id].PossibleValues }
+        );
+        commonVariant = new();
+    }
+}

@@ -1,0 +1,177 @@
+﻿@using System.Globalization
+@inject INotifService NotifService
+@inject DialogService DialogService
+@inject IProductService ProductService
+
+<RadzenDataGrid Data="@variants" TItem="ProductVariantReadModel" AllowSorting="true" AllowFiltering="false" AllowPaging="false">
+    <Columns>
+        <RadzenDataGridColumn TItem="ProductVariantReadModel" Property="VariantId" Title="Biến thể" Sortable="false">
+            <Template Context="item">
+                <RadzenStack Gap="2px">
+                    @foreach (var displayPart in GetVariantDisplay(item))
+                    {
+                        <RadzenBadge BadgeStyle="BadgeStyle.Info">@displayPart</RadzenBadge>
+                    }
+                </RadzenStack>
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="ProductVariantReadModel" Property="BasePrice" Title="Giá">
+            <Template Context="item">
+                @item.BasePrice
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="ProductVariantReadModel" Property="Quantity" Title="Số lượng" />
+        <RadzenDataGridColumn TItem="ProductVariantReadModel" Property="SalePrice" Title="Giá khuyến mãi">
+            <Template Context="item">
+                @(item.SalePrice?.ToString("C", CultureInfo.GetCultureInfo("vi-VN")) ?? "N/A")
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="ProductVariantReadModel" Property="SaleStartDate" Title="Thời gian khuyến mãi" Sortable="false">
+            <Template Context="item">
+                @if (item.SaleFrom.HasValue && item.SaleTo.HasValue)
+                {
+                    <span>@item.SaleFrom.Value.ToString("dd/MM/yyyy") - @item.SaleTo.Value.ToString("dd/MM/yyyy")</span>
+                }
+                else
+                {
+                    <span>N/A</span>
+                }
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="ProductVariantReadModel" Title="Hành động" Sortable="false" Filterable="false">
+            <Template Context="item">
+                <RadzenStack Orientation="Orientation.Horizontal" Gap="8px">
+                    <RadzenButton Text="Chỉnh sửa" ButtonStyle="ButtonStyle.Warning" Variant="Variant.Flat" Size="ButtonSize.Small" Click="@(() => ShowEditVariantModal(item))" />
+                    <RadzenButton Text="Xóa" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Flat" Size="ButtonSize.Small" Click="@(() => ShowDeleteConfirm(item))" />
+                </RadzenStack>
+            </Template>
+        </RadzenDataGridColumn>
+    </Columns>
+    <EmptyTemplate>
+        <RadzenText TextStyle="TextStyle.H6" TextAlign="TextAlign.Center">
+            Không có biến thể nào.
+        </RadzenText>
+    </EmptyTemplate>
+</RadzenDataGrid>
+
+@code {
+    private List<ProductVariantReadModel> variants = [];
+
+    [Parameter, EditorRequired]
+    public Guid ProductId { get; set; }
+
+    private ProductVariantReadModel? variantToDelete;
+    private Guid variantToEditId;
+    private UpdateVariantRequest variantToEdit = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadVariantsAsync();
+        await base.OnInitializedAsync();
+    }
+
+    private async Task LoadVariantsAsync()
+    {
+        var response = await ProductService.GetProductAsync(ProductId);
+        if (response.ResponseMessage.IsSuccessStatusCode)
+        {
+            variants = response.GetContent().Variants.ToList();
+        }
+    }
+
+
+    private IEnumerable<string> GetVariantDisplay(ProductVariantReadModel variant)
+    {
+        var displayParts = variant.ProductAttributeValuePairs
+            .OrderBy(pair => pair.AttributeId)
+            .Select(av => $"{av.AttributeName}: {av.AttributeValue}");
+        return displayParts;
+    }
+
+    private async Task ShowDeleteConfirm(ProductVariantReadModel? variant)
+    {
+        variantToDelete = variant;
+        var ok = await DialogService.OpenAsync<DeleteConfirmationModal>("Xoá biến thể",
+            new Dictionary<string, object>
+            {
+                { "ChildContent", GetDeleteDialogContent() }
+            });
+
+        if (ok == true)
+        {
+            await HandleDelete();
+        }
+    }
+
+    private RenderFragment GetDeleteDialogContent()
+    {
+        return __builder =>
+        {
+            <RadzenText>Bạn có chắc chắn muốn xóa biến thể này không?</RadzenText>
+        };
+    }
+
+    private async Task HandleDelete()
+    {
+        if (variantToDelete != null)
+        {
+            var response = await ProductService.RemoveVariantAsync(ProductId, variantToDelete.Id);
+            if (response.ResponseMessage.IsSuccessStatusCode)
+            {
+                variants = variants.Where(v => v.Id != variantToDelete.Id).ToList();
+
+                NotifService.Success("Xóa biến thể thành công");
+            }
+            else
+            {
+                NotifService.Error("Xóa biến thể thất bại");
+            }
+        }
+
+        variantToDelete = null;
+    }
+
+    private async Task ShowEditVariantModal(ProductVariantReadModel variant)
+    {
+        variantToEditId = variant.Id;
+        variantToEdit = new UpdateVariantRequest
+        {
+            BasePrice = variant.BasePrice,
+            SalePrice = variant.SalePrice,
+            SaleFrom = variant.SaleFrom,
+            SaleTo = variant.SaleTo
+        };
+
+        var ok = await DialogService.OpenAsync<EditExistingVariantModal>("Chỉnh sửa biến thể sản phẩm",
+            new Dictionary<string, object>
+            {
+                { "EditingVariant", variantToEdit }
+            });
+
+        if (ok == true)
+        {
+            await HandleUpdate();
+        }
+    }
+
+    private async Task HandleUpdate()
+    {
+        var response = await ProductService.UpdateVariantAsync(ProductId, variantToEditId, variantToEdit);
+        if (response.ResponseMessage.IsSuccessStatusCode)
+        {
+            var index = variants.FindIndex(v => v.Id == variantToEditId);
+            var updatedVariants = new List<ProductVariantReadModel>(variants.Count);
+            for (int i = 0; i < variants.Count; i++)
+            {
+                updatedVariants.Add(i == index ? response.GetContent() : variants[i]);
+            }
+
+            variants = updatedVariants;
+            NotifService.Success("Chỉnh sửa biến thể thành công");
+        }
+        else
+        {
+            NotifService.Error("Chỉnh sửa biến thể thất bại");
+        }
+    }
+}

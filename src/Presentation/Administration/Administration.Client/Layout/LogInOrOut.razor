@@ -1,0 +1,50 @@
+﻿@implements IDisposable
+
+@inject NavigationManager NavigationManager
+
+<div class="nav-item px-3">
+    <AuthorizeView>
+        <Authorized>
+            <RadzenProfileMenu>
+                <Template>
+                    <RadzenGravatar Email="user@example.com">
+                    </RadzenGravatar>
+                </Template>
+                <ChildContent>
+                    <RadzenProfileMenuItem Text="Buttons" Path="buttons" Icon="account_circle"></RadzenProfileMenuItem>
+                    <RadzenProfileMenuItem Text="Menu" Path="menu" Icon="line_weight"></RadzenProfileMenuItem>
+                    <RadzenProfileMenuItem Text="FileInput" Path="fileinput" Icon="attach_file"></RadzenProfileMenuItem>
+                    <RadzenProfileMenuItem Text="Dialog" Path="dialog" Icon="perm_media"></RadzenProfileMenuItem>
+                    <RadzenProfileMenuItem Text="Đăng xuất" Path="@($"authentication/logout?returnUrl={currentUrl}")" Icon="announcement"></RadzenProfileMenuItem>
+                </ChildContent>
+            </RadzenProfileMenu>
+        </Authorized>
+
+        <NotAuthorized>
+            <RadzenButton Click="@(() => NavigationManager.NavigateTo("authentication/login", forceLoad: true))" Variant="Variant.Flat">
+                Đăng nhập
+            </RadzenButton>
+        </NotAuthorized>
+    </AuthorizeView>
+</div>
+
+@code {
+    private string? currentUrl;
+
+    protected override void OnInitialized()
+    {
+        currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+        NavigationManager.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        currentUrl = NavigationManager.ToBaseRelativePath(e.Location);
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+}

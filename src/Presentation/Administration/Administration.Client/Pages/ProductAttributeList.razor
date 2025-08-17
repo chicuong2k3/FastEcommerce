@@ -1,0 +1,199 @@
+@page "/admin/product-attributes"
+
+@inject IProductAttributeService ProductAttributeService
+@inject NavigationManager NavigationManager
+@inject INotifService NotifService
+@inject DialogService DialogService
+
+<PageTitle>Quản lý thuộc tính sản phẩm</PageTitle>
+
+<RadzenCard>
+    <RadzenStack>
+        <RadzenButton Text="THÊM THUỘC TÍNH" ButtonStyle="ButtonStyle.Primary" Size="Radzen.ButtonSize.Medium" Click="ShowCreateModal" Shade="Radzen.Shade.Default" Variant="Variant.Flat" IsBusy="false" />
+    </RadzenStack>
+</RadzenCard>
+
+<RadzenCard>
+    <RadzenStack>
+        <RadzenDataGrid Data="@productAttributes" TItem="ProductAttributeReadModel" AllowSorting="true" AllowFiltering="true" AllowPaging="true" AllowVirtualization="true" AllowAlternatingRows="true" Density="Radzen.Density.Compact" Responsive="false" AllowCompositeDataCells="false" ShowCellDataAsTooltip="true" AllowRowSelectOnRowClick="false" IsLoading="false" EditMode="Radzen.DataGridEditMode.Single" PagerAlwaysVisible="false" PagerHorizontalAlign="Radzen.HorizontalAlign.Right" PageSize="5" PageSizeOptions="[5, 10, 50]" PagerPosition="Radzen.PagerPosition.Bottom" GotoFirstPageOnSort="true" PageSizeText="dòng mỗi trang" PageTitleFormat="Trang {0}" FilterMode="Radzen.FilterMode.Simple" FilterCaseSensitivity="Radzen.FilterCaseSensitivity.CaseInsensitive" AllowFilterDateInput="false" FilterPopupRenderMode="Radzen.PopupRenderMode.Initial" FilterDelay="100">
+            <Columns>
+                <RadzenDataGridColumn TItem="ProductAttributeReadModel" Property="Name" Title="Tên">
+                    <Template Context="productAttribute">
+                        @productAttribute.Name
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="ProductAttributeReadModel" Property="DisplayName" Title="Tên hiển thị">
+                    <Template Context="productAttribute">
+                        @productAttribute.DisplayName
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="ProductAttributeReadModel" Property="IsOption" Title="Là thuộc tính dùng để phân loại">
+                    <Template Context="productAttribute">
+                        <RadzenCheckBox Value="@productAttribute.IsOption" ReadOnly="true" />
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="ProductAttributeReadModel" Title="Hành động" Sortable="false" Filterable="false">
+                    <Template Context="productAttribute">
+                        <RadzenStack Orientation="Orientation.Horizontal" Gap="8px">
+                            <RadzenButton Text="Chỉnh sửa" ButtonStyle="ButtonStyle.Warning" Size="ButtonSize.Small" Variant="Variant.Flat" Click="@(() => ShowEditModal(productAttribute))" />
+                            <RadzenButton Text="Xóa" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Variant="Variant.Flat" Click="@(() => ShowDeleteModal(productAttribute))" />
+                            <RadzenButton Text="Các giá trị" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small" Variant="Variant.Flat" Click="@(() => ShowProductAttributeValuesModal(productAttribute))" />
+                        </RadzenStack>
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+            <EmptyTemplate>
+                <RadzenStack JustifyContent="JustifyContent.Center">
+                    <RadzenText TextStyle="TextStyle.H6" TextAlign="TextAlign.Center">
+                        Chưa có thuộc tính nào
+                    </RadzenText>
+                </RadzenStack>
+            </EmptyTemplate>
+        </RadzenDataGrid>
+    </RadzenStack>
+</RadzenCard>
+
+@code {
+    private List<ProductAttributeReadModel> productAttributes = new();
+    private CreateUpdateProductAttributeRequest currentProductAttribute = new();
+    private Guid selectedProductAttributeId;
+    private ProductAttributeReadModel selectedForDeleteProductAttribute = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProductAtrtibutesAsync();
+        await base.OnInitializedAsync();
+    }
+
+    private async Task LoadProductAtrtibutesAsync()
+    {
+        var response = await ProductAttributeService.GetProductAttributesAsync();
+        if (response.ResponseMessage.IsSuccessStatusCode)
+        {
+            productAttributes = response.GetContent().ToList();
+        }
+        else
+        {
+            Console.WriteLine("Error fetching product attributes");
+        }
+    }
+
+    private async Task ShowCreateModal()
+    {
+        currentProductAttribute = new();
+        var ok = await DialogService.OpenAsync<CreateEditProductAttributeModal>("Thêm thuộc tính sản phẩm",
+            new Dictionary<string, object>
+            {
+                { "ProductAttribute", currentProductAttribute }
+            });
+
+        if (ok == true)
+        {
+            await HandleCreate();
+        }
+    }
+
+    private async Task ShowEditModal(ProductAttributeReadModel productAttribute)
+    {
+        selectedProductAttributeId = productAttribute.Id;
+        currentProductAttribute = new CreateUpdateProductAttributeRequest
+        {
+            Name = productAttribute.Name,
+            DisplayName = productAttribute.DisplayName,
+            IsOption = productAttribute.IsOption,
+            Unit = productAttribute.Unit
+        };
+
+        var ok = await DialogService.OpenAsync<CreateEditProductAttributeModal>("Chỉnh sửa thuộc tính sản phẩm",
+            new Dictionary<string, object>
+            {
+                { "ProductAttribute", currentProductAttribute }
+            });
+
+        if (ok == true)
+        {
+            await HandleUpdate();
+        }
+    }
+
+    private async Task ShowDeleteModal(ProductAttributeReadModel productAttribute)
+    {
+        selectedForDeleteProductAttribute = productAttribute;
+        var ok = await DialogService.OpenAsync<DeleteConfirmationModal>("Xoá thuộc tính sản phẩm",
+            new Dictionary<string, object>
+            {
+                { "ChildContent", GetDeleteDialogContent() }
+            });
+
+        if (ok == true)
+        {
+            await HandleDelete();
+        }
+    }
+
+    private RenderFragment GetDeleteDialogContent()
+    {
+        return __builder =>
+        {
+            <RadzenText>Bạn có chắc chắn muốn xóa thuộc tính '@selectedForDeleteProductAttribute.Name' không?</RadzenText>
+        };
+    }
+
+    private async Task ShowProductAttributeValuesModal(ProductAttributeReadModel productAttribute)
+    {
+        var parameters = new Dictionary<string, object>
+        {
+            { "ProductAttribute", productAttribute }
+        };
+        await DialogService.OpenAsync<ProductAttributeValuesModal>("Quản lý giá trị thuộc tính sản phẩm", parameters);
+    }
+
+    private async Task HandleCreate()
+    {
+        var response = await ProductAttributeService.CreateProductAttributeAsync(currentProductAttribute);
+        if (response.ResponseMessage.IsSuccessStatusCode)
+        {
+            productAttributes = [.. productAttributes, response.GetContent()];
+            NotifService.Success("Tạo thành công");
+        }
+        else
+        {
+            NotifService.Error("Tạo thất bại");
+        }
+    }
+
+    private async Task HandleUpdate()
+    {
+        var response = await ProductAttributeService.UpdateProductAttributeAsync(selectedProductAttributeId, currentProductAttribute);
+        if (response.ResponseMessage.IsSuccessStatusCode)
+        {
+            var index = productAttributes.FindIndex(pa => pa.Id == selectedProductAttributeId);
+            var updatedAttributes = new List<ProductAttributeReadModel>(productAttributes.Count);
+            for (int i = 0; i < productAttributes.Count; i++)
+            {
+                updatedAttributes.Add(i == index ? response.GetContent() : productAttributes[i]);
+            }
+
+            productAttributes = updatedAttributes;
+            NotifService.Success("Chỉnh sửa thành công");
+        }
+        else
+        {
+            NotifService.Error("Chỉnh sửa thất bại");
+        }
+    }
+
+    private async Task HandleDelete()
+    {
+        var response = await ProductAttributeService.DeleteProductAttributeAsync(selectedForDeleteProductAttribute.Id);
+        if (response.ResponseMessage.IsSuccessStatusCode)
+        {
+            productAttributes = productAttributes.Where(pa => pa.Id != selectedForDeleteProductAttribute.Id).ToList();
+            NotifService.Success("Xoá thành công");
+        }
+        else
+        {
+            NotifService.Error("Xoá thất bại");
+        }
+    }
+}

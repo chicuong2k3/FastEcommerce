@@ -1,0 +1,92 @@
+version: '3.9'
+
+services:
+  portainer:
+    image: portainer/portainer-ce:latest
+
+  seq:
+    image: datalust/seq:latest
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.9.2
+
+  kibana:
+   image: docker.elastic.co/kibana/kibana:7.9.2
+
+  pgadmin:
+    image: dpage/pgadmin4
+
+  redis:
+    image: redis:latest
+
+  rabbitmq:
+    image: rabbitmq:management
+
+  postgres:
+    image: postgres:latest
+
+  catalog.api:
+    image: ${DOCKER_REGISTRY-}catalogapi
+    build:
+      context: .
+      dockerfile: src/Modules/Catalog/Catalog.Api/Dockerfile
+
+  apigateway:
+    image: ${DOCKER_REGISTRY-}apigateway
+    build:
+      context: .
+      dockerfile: src/Gateways/ApiGateway/Dockerfile
+
+  inventoryservice.api:
+    image: ${DOCKER_REGISTRY-}inventoryserviceapi
+    build:
+      context: .
+      dockerfile: src/Modules/InventoryService/InventoryService.Api/Dockerfile
+
+  ordering.api:
+    image: ${DOCKER_REGISTRY-}orderingapi
+    build:
+      context: .
+      dockerfile: src/Modules/Ordering/Ordering.Api/Dockerfile
+
+  identityserver:
+    image: ${DOCKER_REGISTRY-}identityserver
+    build:
+      context: .
+      dockerfile: src/IdentityServer/Dockerfile
+
+  mediaservice.api:
+    image: ${DOCKER_REGISTRY-}mediaserviceapi
+    build:
+      context: .
+      dockerfile: src/Modules/MediaService/MediaService.Api/Dockerfile
+
+volumes:
+  portainer_data:
+  seq_data:
+  elasticsearch_data:
+  pgadmin_data:
+  rabbitmq_data:
+  rabbitmq_log:
+  catalog_postgres_data:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

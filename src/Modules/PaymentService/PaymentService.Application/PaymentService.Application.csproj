@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\Shared.Application\Shared.Application.csproj" />
+    <ProjectReference Include="..\..\Ordering\Ordering.Contracts\Ordering.Contracts.csproj" />
+    <ProjectReference Include="..\PaymentService.Core\PaymentService.Core.csproj" />
+  </ItemGroup>
+
+</Project>

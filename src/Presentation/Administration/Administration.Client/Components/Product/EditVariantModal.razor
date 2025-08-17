@@ -1,0 +1,73 @@
+@inject DialogService DialogService
+@inject IValidator<AddVariantRequest> Validator
+
+<RadzenTemplateForm TItem="AddVariantRequest" Data="@EditingVariant" Submit="@Submit">
+    <RadzenStack>
+        <RadzenFormField Text="SKU" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%;">
+            <ChildContent>
+                <RadzenTextBox @bind-Value="EditingVariant.Sku" Name="Sku" />
+            </ChildContent>
+            <Helper>
+                <FluentValidator TModel="AddVariantRequest" TValue="string"
+                                 For="@(() => EditingVariant.Sku)"
+                                 Model="@EditingVariant"
+                                 Validator="@Validator" />
+            </Helper>
+        </RadzenFormField>
+        <RadzenFormField Text="Giá" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%;">
+            <ChildContent>
+                <RadzenNumeric @bind-Value="EditingVariant.BasePrice" Name="BasePrice" />
+            </ChildContent>
+            <Helper>
+                <FluentValidator TModel="AddVariantRequest" TValue="decimal"
+                                 For="@(() => EditingVariant.BasePrice)"
+                                 Model="@EditingVariant"
+                                 Validator="@Validator" />
+            </Helper>
+        </RadzenFormField>
+
+        <RadzenFormField Text="Giá khuyến mãi" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%;">
+            <ChildContent>
+                <RadzenNumeric @bind-Value="EditingVariant.SalePrice" Name="SalePrice" />
+            </ChildContent>
+            <Helper>
+                <FluentValidator TModel="AddVariantRequest" TValue="decimal?"
+                                 For="@(() => EditingVariant.SalePrice)"
+                                 Model="@EditingVariant"
+                                 Validator="@Validator" />
+            </Helper>
+        </RadzenFormField>
+        <RadzenFormField Text="Thời gian bắt đầu khuyến mãi" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%;">
+            <ChildContent>
+                <RadzenDatePicker @bind-Value="EditingVariant.SaleFrom" Name="SaleFrom" DateFormat="dd/MM/yyyy" AllowClear="true" />
+            </ChildContent>
+            <Helper>
+                <FluentValidator TModel="AddVariantRequest" TValue="DateTime?"
+                                 For="@(() => EditingVariant.SaleFrom)"
+                                 Model="@EditingVariant"
+                                 Validator="@Validator" />
+            </Helper>
+        </RadzenFormField>
+        <RadzenFormField Text="Thời gian kết thúc khuyến mãi" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%;">
+            <ChildContent>
+                <RadzenDatePicker @bind-Value="EditingVariant.SaleTo" Name="SaleTo" DateFormat="dd/MM/yyyy" AllowClear="true" />
+            </ChildContent>
+        </RadzenFormField>
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="8px">
+            <RadzenButton Text="Đóng" ButtonStyle="ButtonStyle.Secondary" Size="Radzen.ButtonSize.Medium" Click="(() => DialogService.Close(false))" Variant="Radzen.Variant.Flat" Shade="Radzen.Shade.Default" />
+            <RadzenButton Text="Lưu" ButtonStyle="ButtonStyle.Primary" Size="Radzen.ButtonSize.Medium" Click="Submit" Shade="Radzen.Shade.Default" Variant="Radzen.Variant.Flat" />
+        </RadzenStack>
+    </RadzenStack>
+</RadzenTemplateForm>
+
+
+@code {
+    [Parameter]
+    public AddVariantRequest EditingVariant { get; set; }
+
+
+    private void Submit()
+    {
+        DialogService.Close(true);
+    }
+}

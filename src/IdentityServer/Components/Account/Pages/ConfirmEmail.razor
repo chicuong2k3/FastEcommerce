@@ -1,0 +1,52 @@
+﻿@page "/Account/ConfirmEmail"
+
+@using System.Text
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.WebUtilities
+
+@inject UserManager<ApplicationUser> UserManager
+@inject NavigationManager NavigationManager
+@inject INotifService NotifService
+
+<PageTitle>Xác nhận email</PageTitle>
+
+@code {
+    [SupplyParameterFromQuery]
+    private string? UserId { get; set; }
+
+    [SupplyParameterFromQuery]
+    private string? Code { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (UserId is null || Code is null)
+        {
+            return;
+        }
+
+        var user = await UserManager.FindByIdAsync(UserId);
+        if (user is null)
+        {
+            NavigationManager.NavigateTo(NavigationManager.GetUriWithQueryParameters(
+                    NavigationManager.ToAbsoluteUri("Account/Login").AbsoluteUri,
+                    new Dictionary<string, object?>() { ["returnUrl"] = ReturnUrl }));
+        }
+        else
+        {
+            var code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(Code));
+            var result = await UserManager.ConfirmEmailAsync(user, code);
+
+            if (result.Succeeded)
+            {
+                NavigationManager.NavigateTo(NavigationManager.GetUriWithQueryParameters(
+                        NavigationManager.ToAbsoluteUri("Account/Login").AbsoluteUri,
+                        new Dictionary<string, object?>() { ["returnUrl"] = ReturnUrl, ["confirmEmailMessage"] = "Xác thực email thành công!" }));
+            }
+        }
+
+    }
+}

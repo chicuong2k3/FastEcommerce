@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+	</PropertyGroup>
+
+
+	<ItemGroup>
+		<SupportedPlatform Include="browser" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.18" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+		<PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
+
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\Modules\Catalog\Catalog.ReadModels\Catalog.ReadModels.csproj" />
+		<ProjectReference Include="..\..\Modules\Catalog\Catalog.Requests\Catalog.Requests.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Folder Include="Implementations\" />
+		<Folder Include="wwwroot\" />
+	</ItemGroup>
+
+</Project>

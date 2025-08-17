@@ -1,0 +1,62 @@
+@inject DialogService DialogService
+@inject IValidator<CreateUpdateProductAttributeRequest> Validator
+
+<RadzenTemplateForm TItem="CreateUpdateProductAttributeRequest" Data="@ProductAttribute" Submit="@Submit">
+    <RadzenStack>
+
+        <RadzenFormField Text="Tên" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%;">
+            <ChildContent>
+                <RadzenTextBox Name="Name" @bind-Value="ProductAttribute.Name" />
+            </ChildContent>
+            <Helper>
+                <FluentValidator TModel="CreateUpdateProductAttributeRequest" TValue="string"
+                                 For="@(() => ProductAttribute.Name)"
+                                 Model="@ProductAttribute"
+                                 Validator="@Validator" />
+            </Helper>
+        </RadzenFormField>
+        <RadzenFormField Text="Tên hiển thị" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%;">
+            <ChildContent>
+                <RadzenTextBox Name="DisplayName" @bind-Value="ProductAttribute.DisplayName" />
+            </ChildContent>
+            <Helper>
+                <FluentValidator TModel="CreateUpdateProductAttributeRequest" TValue="string"
+                                 For="@(() => ProductAttribute.DisplayName)"
+                                 Model="@ProductAttribute"
+                                 Validator="@Validator" />
+            </Helper>
+        </RadzenFormField>
+
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+            <RadzenLabel Text="Thuộc tính dùng để phân loại?" Component="IsOption" />
+            <RadzenCheckBox Name="IsOption" @bind-Value="ProductAttribute.IsOption" />
+        </RadzenStack>
+
+        @if (!ProductAttribute.IsOption)
+        {
+            <RadzenFormField Text="Đơn vị" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%;">
+                <ChildContent>
+                    <RadzenTextBox Name="Unit" @bind-Value="ProductAttribute.Unit" />
+                </ChildContent>
+            </RadzenFormField>
+        }
+
+        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="8px">
+            <RadzenButton Text="Đóng" ButtonStyle="ButtonStyle.Secondary" Size="Radzen.ButtonSize.Medium" Click="@(() => DialogService.Close(false))" Variant="Variant.Flat" />
+            <RadzenButton Text="Lưu thay đổi" ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary" Size="Radzen.ButtonSize.Medium" Variant="Variant.Flat" />
+        </RadzenStack>
+
+    </RadzenStack>
+</RadzenTemplateForm>
+
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public CreateUpdateProductAttributeRequest ProductAttribute { get; set; }
+
+    private void Submit()
+    {
+        DialogService.Close(true);
+    }
+}

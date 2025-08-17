@@ -1,0 +1,239 @@
+@page "/admin/products"
+
+@inject IProductService ProductService
+@inject IProductAttributeService ProductAttributeService
+@inject ICategoryService CategoryService
+@inject INotifService NotifService
+@inject DialogService DialogService
+@inject NavigationManager NavigationManager
+
+
+<PageTitle>Quản lý sản phẩm</PageTitle>
+
+
+<RadzenCard>
+    <RadzenStack Gap="8px">
+        <RadzenButton Text="THÊM SẢN PHẨM" ButtonStyle="ButtonStyle.Primary" Click="@(() => NavigationManager.NavigateTo("/admin/create-edit-product"))" Shade="Radzen.Shade.Default" Size="Radzen.ButtonSize.Medium" Variant="Radzen.Variant.Flat" />
+
+        <RadzenRow>
+            <RadzenColumn Size="12">
+                <RadzenFormField Text="Tìm kiếm sản phẩm" Variant="Variant.Outlined" Style="width: 100%;" AllowFloatingLabel="false">
+                    <RadzenTextBox @bind-Value="searchTerm" Placeholder="Nhập tên sản phẩm" Change="@(args => ApplyFilters())" />
+                </RadzenFormField>
+            </RadzenColumn>
+        </RadzenRow>
+        <RadzenRow>
+            <RadzenColumn SizeSM="12" SizeMD="6">
+                <RadzenFormField Text="Danh mục" Variant="Variant.Outlined" Style="width: 100%;">
+                    <RadzenDropDown @bind-Value="filter.CategoryId" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterDelay="10" Data="categories" TextProperty="Name" ValueProperty="Id" AllowClear="true" Placeholder="Tất cả danh mục" />
+                </RadzenFormField>
+            </RadzenColumn>
+            <RadzenColumn SizeSM="12" SizeMD="6">
+                <RadzenFormField Text="Sắp xếp" Variant="Variant.Outlined" Style="width: 100%;">
+                    <RadzenDropDown @bind-Value="filter.SortBy" Data="sortOptions" TextProperty="Text" ValueProperty="Value" Style="width: 100%;" Placeholder="Mặc định" />
+                </RadzenFormField>
+            </RadzenColumn>
+        </RadzenRow>
+        <RadzenRow>
+            <RadzenColumn Size="12">
+                <RadzenFieldset Text="Khoảng giá">
+                    <RadzenStack>
+                        <RadzenSlider Style="width: 100%" Range="true" @bind-Value="@priceRange" Step="@PriceStep.ToString()" Min="@MinPrice" Max="@MaxPrice" />
+                        <RadzenStack Orientation="Orientation.Horizontal">
+                            <RadzenNumeric @bind-Value="@priceRange[0]" Step="@PriceStep.ToString()" />
+                            <RadzenNumeric @bind-Value="@priceRange[1]" Step="@PriceStep.ToString()" />
+                        </RadzenStack>
+                    </RadzenStack>
+                </RadzenFieldset>
+            </RadzenColumn>
+        </RadzenRow>
+
+        <RadzenRow JustifyContent="JustifyContent.End" Style="margin-top: 16px;">
+            <RadzenButton Text="Áp dụng bộ lọc" ButtonStyle="ButtonStyle.Primary" Click="ApplyFilters" Shade="Radzen.Shade.Default" Size="Radzen.ButtonSize.Medium" Variant="Radzen.Variant.Flat" />
+        </RadzenRow>
+
+    </RadzenStack>
+</RadzenCard>
+
+<!-- Table -->
+<RadzenCard>
+    <RadzenDataGrid Data="@products" TItem="ProductReadModel" AllowSorting="false" AllowFiltering="false" AllowPaging="false" AllowVirtualization="true" AllowAlternatingRows="true" Density="Radzen.Density.Compact" GridLines="Radzen.DataGridGridLines.Default" Responsive="false" AllowCompositeDataCells="false" ShowCellDataAsTooltip="true" AllowRowSelectOnRowClick="false" IsLoading="false" EditMode="Radzen.DataGridEditMode.Single" PagerAlwaysVisible="false" PagerHorizontalAlign="Radzen.HorizontalAlign.Right" PageSize="5" PageSizeOptions="[5, 10, 50]" PagerPosition="Radzen.PagerPosition.Bottom" GotoFirstPageOnSort="true" PageSizeText="dòng mỗi trang" PageTitleFormat="Trang {0}" PagingSummaryFormat="Trang {0} của {1} (tổng {2} dòng))">
+        <Columns>
+            <RadzenDataGridColumn TItem="ProductReadModel" Property="Name" Title="Tên" Width="100px" />
+            <RadzenDataGridColumn TItem="ProductReadModel" Title="Hành động" Width="240px" Sortable="false" Filterable="false">
+                <Template Context="product">
+                    <RadzenButton Text="Chỉnh sửa" ButtonStyle="ButtonStyle.Warning" Size="ButtonSize.Small" Variant="Variant.Flat" Click="@(() => NavigationManager.NavigateTo($"/admin/create-edit-product/{product.Id}"))" Style="margin-right: 8px;" />
+                    <RadzenButton Text="Xóa" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Variant="Variant.Flat" Click="@(() => ShowDeleteModal(product))" Style="margin-right: 8px;" />
+                    @if (!product.IsSimple)
+                    {
+
+                        <RadzenButton Text="Các biến thể" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small" Variant="Variant.Flat" Click="@(() => NavigationManager.NavigateTo($"/admin/products/{product.Id}/variants"))" Style="margin-right: 8px;" />
+                    }
+                    <RadzenButton Text="Ảnh" ButtonStyle="ButtonStyle.Dark" Size="ButtonSize.Small" Variant="Variant.Flat" Click="@(() => NavigationManager.NavigateTo($"/admin/products/{product.Id}/images"))" />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+        <EmptyTemplate>
+            <RadzenStack AlignItems="AlignItems.Center">
+                <RadzenText TextStyle="TextStyle.H6" Text="Không có sản phẩm nào" />
+            </RadzenStack>
+        </EmptyTemplate>
+    </RadzenDataGrid>
+
+    @if (TotalPages > 0)
+    {
+        <RadzenPager Density="Density.Compact" PageSize="@pageSize" PageSizeChanged="OnPageSizeChanged" PageChanged="@((e) => OnPageChanged(e))" Count="@TotalItems" PageSizeOptions="[5, 10, 20]" PageSizeText="dòng mỗi trang" PageTitleFormat="Trang {0}" HorizontalAlign="HorizontalAlign.Right" Style="margin-top: 16px;" />
+    }
+</RadzenCard>
+
+@code {
+    class SortOption
+    {
+        public string Text { get; set; }
+        public string Value { get; set; }
+
+        public SortOption(string text, string value)
+        {
+            Text = text;
+            Value = value;
+        }
+    }
+
+    private int currentPage = 1;
+    private int pageSize = 5;
+    private int TotalPages;
+    private int TotalItems;
+    private string searchTerm = string.Empty;
+    private List<ProductReadModel> products = new();
+    private Guid selectedProductId;
+    private ProductReadModel selectedForDeleteProduct = new();
+    private CreateUpdateProductRequest Product = new();
+    private List<ProductVariantReadModel> variants = new();
+    private List<ProductAttributeReadModel> attributes = new();
+    private List<CategoryReadModel> categories = new();
+    private SearchProductsRequest filter = new();
+    private List<SortOption> sortOptions = new()
+    {
+        new SortOption("Tên (A-Z)", "name asc"),
+        new SortOption("Tên (Z-A)", "name desc"),
+        new SortOption("Giá (Thấp-Cao)", "price asc"),
+        new SortOption("Giá (Cao-Thấp)", "price desc")
+    };
+
+    private decimal[] priceRange = new decimal[2] { MinPrice, MaxPrice };
+    private const decimal PriceStep = 1000;
+    private const decimal MinPrice = 1000;
+    private const decimal MaxPrice = 1000000;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategoriesAsync();
+        await LoadAttributesAsync();
+        await LoadProductsAsync();
+        await base.OnInitializedAsync();
+    }
+
+    private async Task LoadCategoriesAsync()
+    {
+        var response = await CategoryService.GetCategoriesAsync(null);
+        if (response.ResponseMessage.IsSuccessStatusCode)
+        {
+            categories = response.GetContent().ToList();
+        }
+    }
+
+    private async Task LoadAttributesAsync()
+    {
+        var response = await ProductAttributeService.GetProductAttributesAsync();
+        if (response.ResponseMessage.IsSuccessStatusCode)
+        {
+            attributes = response.GetContent().ToList();
+        }
+    }
+
+    private async Task LoadProductsAsync()
+    {
+        filter.SearchText = searchTerm;
+        //filter.MinPrice = priceRange[0];
+        //filter.MaxPrice = priceRange[1];
+        filter.PageNumber = currentPage;
+        filter.PageSize = pageSize;
+
+        var response = await ProductService.GetProductsAsync(filter.PageNumber, filter.PageSize, filter.CategoryId, filter.SearchText, filter.SortBy, filter.MinPrice, filter.MaxPrice);
+        if (response.ResponseMessage.IsSuccessStatusCode)
+        {
+            products = response.GetContent().Data.ToList();
+            TotalPages = response.GetContent().TotalPages;
+            TotalItems = response.GetContent().TotalRecords;
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ApplyFilters()
+    {
+        currentPage = 1;
+        await LoadProductsAsync();
+    }
+
+
+    private async Task ShowDeleteModal(ProductReadModel product)
+    {
+        selectedForDeleteProduct = product;
+        var ok = await DialogService.OpenAsync<DeleteConfirmationModal>("Xác nhận xóa",
+
+        new Dictionary<string, object>
+            {
+                { "ChildContent", GetDeleteDialogContent() }
+            });
+
+        if (ok == true)
+        {
+            await HandleDelete();
+        }
+    }
+
+    private RenderFragment GetDeleteDialogContent()
+    {
+        return __builder =>
+        {
+            <RadzenText TextStyle="TextStyle.H6">
+                Bạn có chắc chắn muốn xoá sản phẩm '@selectedForDeleteProduct.Name' không?
+            </RadzenText>
+            <RadzenText TextStyle="TextStyle.Body2">
+                Hành động này không thể hoàn tác.
+            </RadzenText>
+        };
+    }
+
+    private async Task HandleDelete()
+    {
+        var response = await ProductService.DeleteProductAsync(selectedForDeleteProduct.Id);
+        if (response.ResponseMessage.IsSuccessStatusCode)
+        {
+            NotifService.Success("Xoá thành công");
+            await LoadProductsAsync();
+        }
+        else
+        {
+            NotifService.Error("Xoá thất bại");
+        }
+    }
+
+    private async Task OnPageChanged(PagerEventArgs args)
+    {
+        if (args.PageIndex >= 0 && args.PageIndex < TotalPages)
+        {
+            currentPage = args.PageIndex + 1;
+            await LoadProductsAsync();
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task OnPageSizeChanged(int newSize)
+    {
+        pageSize = newSize;
+        currentPage = 1;
+        await LoadProductsAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+}

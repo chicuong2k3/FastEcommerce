@@ -1,0 +1,164 @@
+﻿@page "/Account/Login"
+
+@using IdentityServer.Components.Account
+@using IdentityServer.Extensions
+@using IdentityServer8
+@using IdentityServer8.Events
+@using IdentityServer8.Models
+@using IdentityServer8.Services
+@using IdentityServer8.Stores
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Components.Authorization
+@inject IValidator<LoginInputModel> Validator
+@inject UserManager<ApplicationUser> UserManager
+@inject NavigationManager NavigationManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject INotifService NotifService
+@inject IJSRuntime JS
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+
+<PageTitle>Đăng nhập</PageTitle>
+
+
+<RadzenRow AlignItems="AlignItems.Center" Style="height: 100vh">
+    <RadzenColumn Size="10" Offset="1" SizeMD="4" OffsetMD="4">
+        <RadzenCard Variant="Variant.Outlined">
+            <RadzenText TextStyle="TextStyle.H5" TextAlign="TextAlign.Center">
+                ĐĂNG NHẬP
+            </RadzenText>
+            <RadzenStack JustifyContent="JustifyContent.Center">
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <RadzenAlert AlertStyle="AlertStyle.Danger" Variant="Variant.Flat" Shade="Shade.Lighter" AllowClose="false">
+                        @errorMessage
+                    </RadzenAlert>
+                }
+
+                <RadzenTemplateForm TItem="LoginInputModel" Data="@Input" Submit="@HandleLogin" Action="/Account/CompleteLogin" Method="post" id="loginForm">
+                    <RadzenStack Gap="12px">
+                        <RadzenFormField Text="Email" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%;">
+                            <ChildContent>
+                                <RadzenTextBox Name="Email" @bind-Value="Input.Email" />
+                            </ChildContent>
+                            <Helper>
+                                <FluentValidator TModel="LoginInputModel" TValue="string"
+                                                 For="@(() => Input.Email)"
+                                                 Model="@Input"
+                                                 Validator="@Validator" />
+                            </Helper>
+                        </RadzenFormField>
+                        <RadzenFormField Text="Mật khẩu" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%;">
+                            <ChildContent>
+                                <RadzenPassword Name="Password" @bind-Value="Input.Password" />
+                            </ChildContent>
+                            <Helper>
+                                <FluentValidator TModel="LoginInputModel" TValue="string"
+                                                 For="@(() => Input.Password)"
+                                                 Model="@Input"
+                                                 Validator="@Validator" />
+                            </Helper>
+                        </RadzenFormField>
+
+                        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+                                <RadzenCheckBox @bind-Value="@Input.RememberMe" Name="RememberMe" />
+                                <RadzenLabel Text="Nhớ mật khẩu" Component="RememberMe" />
+                            </RadzenStack>
+                            <TextButton Text="Quên mật khẩu?" Path="@($"/Account/ForgotPassword?ReturnUrl={Uri.EscapeDataString(ReturnUrl ?? "/")}")" />
+                        </RadzenStack>
+
+                        <input type="hidden" name="returnUrl" value="@ReturnUrl" />
+
+                        <RadzenButton Text="ĐĂNG NHẬP" ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Medium" Variant="Variant.Flat" Style="width: 100%" />
+                    </RadzenStack>
+
+                </RadzenTemplateForm>
+
+
+                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.Center">
+                    <RadzenText TextStyle="TextStyle.Subtitle2">
+                        Chưa có tài khoản?
+                        <TextButton Text="Tạo tài khoản" Path="@($"/Account/Register?ReturnUrl={Uri.EscapeDataString(ReturnUrl ?? "/")}")" />
+                    </RadzenText>
+                </RadzenStack>
+
+                <Divider Text="Đăng nhập với" />
+                <ExternalLoginPicker />
+            </RadzenStack>
+
+
+        </RadzenCard>
+    </RadzenColumn>
+</RadzenRow>
+
+
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
+
+    private LoginInputModel Input = new();
+
+    private string? errorMessage = string.Empty;
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string ConfirmEmailMessage { get; set; } = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        if (!string.IsNullOrEmpty(ConfirmEmailMessage))
+        {
+            NotifService.Success(ConfirmEmailMessage);
+        }
+    }
+
+    private async Task HandleLogin()
+    {
+        var user = await UserManager.FindByEmailAsync(Input.Email);
+        if (user == null)
+        {
+            errorMessage = "Email hoặc mật khẩu không đúng";
+            return;
+        }
+
+        if (!user.EmailConfirmed)
+        {
+            errorMessage = "Vui lòng xác thực tài khoản!";
+            return;
+        }
+
+        var result = await UserManager.CheckPasswordAsync(user, Input.Password);
+
+        if (result)
+        {
+            await JS.InvokeVoidAsync("submitForm", "loginForm");
+        }
+        else
+        {
+            errorMessage = "Email hoặc mật khẩu không đúng";
+        }
+    }
+
+    public class LoginInputModel
+    {
+        public string Email { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+        public bool RememberMe { get; set; }
+    }
+
+    public class LoginInputModelValidator : AbstractValidator<LoginInputModel>
+    {
+        public LoginInputModelValidator()
+        {
+            RuleFor(x => x.Email)
+                .NotEmpty().WithMessage("Vui lòng nhập email.")
+                .EmailAddress().WithMessage("Email không đúng định dạng.");
+
+            RuleFor(x => x.Password)
+                .NotEmpty().WithMessage("Vui lòng nhập mật khẩu.")
+                .MinimumLength(6).WithMessage("Mật khẩu phải có ít nhất 6 ký tự.");
+        }
+    }
+}

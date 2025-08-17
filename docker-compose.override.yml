@@ -1,0 +1,215 @@
+version: '3.9'
+
+services:
+  portainer:
+    container_name: portainer
+    restart: always
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+
+  seq:
+    container_name: seq
+    restart: always
+    ports:
+      - "5341:5431"
+    volumes:
+      - seq_data:/data
+    environment:
+      - ACCEPT_EULA=Y
+
+  jaeger:
+    container_name: jaeger
+    restart: always
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+      - "4318:4318"
+
+  elasticsearch:
+    container_name: elasticsearch
+    restart: always
+    ports:
+      - "9200:9200"
+    environment:
+      - xpack.monitoring.enabled=true
+      - xpack.watcher.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - discovery.type=single-node
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+
+  kibana:
+    container_name: kibana
+    ports:
+      - 5601:5601
+    depends_on:
+      - elasticsearch
+    environment:
+      - ELASTICSEARCH_URL=http://localhost:9200
+
+  pgadmin:
+    container_name: pgAdmin4
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "15433:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+
+  redis:
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    container_name: rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - rabbitmq_log:/var/log/rabbitmq
+
+  postgres:
+    container_name: postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_MULTIPLE_DATABASES: fast-ecommerce-catalog,fast-ecommerce-inventory,fast-ecommerce-ordering, identityserver
+    volumes:
+      - catalog_postgres_data:/var/lib/postgresql/data/
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  apigateway:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ASPNETCORE_HTTPS_PORTS=8081
+      - Elasticsearch__Uri=http://elasticsearch:9200
+    ports:
+      - "20000:8080"
+      - "20001:8081"
+    volumes:
+      - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+      - ${APPDATA}/ASP.NET/Https:/home/app/.aspnet/https:ro
+      - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+
+  catalog.api:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ConnectionStrings__Database=Host=postgres;Database=fast-ecommerce-catalog;Username=postgres;Password=postgres;Trust Server Certificate=true
+      - ConnectionStrings__Mongo=mongodb://admin:admin@mongodb:27017
+      - RabbitMqOptions__Host=rabbitmq
+      - RabbitMqOptions__VHost=/
+      - RabbitMqOptions__Username=guest
+      - RabbitMqOptions__Password=guest
+      - Elasticsearch__Uri=http://elasticsearch:9200
+    ports:
+      - "12000:8080"
+    volumes:
+      - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+      - ${APPDATA}/ASP.NET/Https:/home/app/.aspnet/https:ro
+      - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  inventoryservice.api:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ConnectionStrings__Database=Host=postgres;Database=fast-ecommerce-inventory;Username=postgres;Password=postgres;Trust Server Certificate=true
+      - RabbitMqOptions__Host=rabbitmq
+      - RabbitMqOptions__VHost=/
+      - RabbitMqOptions__Username=guest
+      - RabbitMqOptions__Password=guest
+      - ApiClients__Catalog=http://catalog.api:8080
+      - Elasticsearch__Uri=http://elasticsearch:9200
+    ports:
+      - "7000:8080"
+    volumes:
+      - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+      - ${APPDATA}/ASP.NET/Https:/home/app/.aspnet/https:ro
+      - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+        
+  ordering.api:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ConnectionStrings__Database=Host=postgres;Database=fast-ecommerce-ordering;Username=postgres;Password=postgres;Trust Server Certificate=true
+      - ConnectionStrings__Cache=redis:6379
+      - RabbitMqOptions__Host=rabbitmq
+      - RabbitMqOptions__VHost=/
+      - RabbitMqOptions__Username=guest
+      - RabbitMqOptions__Password=guest
+      - ApiClients__Catalog=http://catalog.api:8080
+      - ApiClients__Inventory=http://inventoryservice.api:8080 
+      - Elasticsearch__Uri=http://elasticsearch:9200
+    ports:
+      - "8000:8080"
+    volumes:
+      - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+      - ${APPDATA}/ASP.NET/Https:/home/app/.aspnet/https:ro
+      - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  identityserver:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ASPNETCORE_HTTPS_PORTS=8081
+      - Host=http://identityserver:8080
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=identityserver;Username=postgres;Password=postgres;Trust Server Certificate=true
+    ports:
+      - "5000:8080"
+      - "5001:8081"
+    volumes:
+      - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+      - ${APPDATA}/ASP.NET/Https:/home/app/.aspnet/https:ro
+      - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+
+  mediaservice.api:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - Cloudinary__CloudName=dz4xapwfd
+      - Cloudinary__ApiKey=558494989385852
+      - Cloudinary__ApiSecret=8KBNIh86bP2n8vJ3_1An6k-gfGc
+      - Elasticsearch__Uri=http://elasticsearch:9200
+    ports:
+      - "13000:8080"
+    volumes:
+      - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+      - ${APPDATA}/ASP.NET/Https:/home/app/.aspnet/https:ro
+      - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro

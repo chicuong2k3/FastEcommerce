@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net9.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="AspNetCore.HealthChecks.UI.Client" Version="9.0.0" />
+		<PackageReference Include="FastEndpoints.Security" Version="6.1.0" />
+		<PackageReference Include="FastEndpoints.Swagger" Version="6.1.0" />
+		<PackageReference Include="FastEndpoints" Version="6.1.0" />
+		<PackageReference Include="Microsoft.OpenApi" Version="1.6.24" />
+		<PackageReference Include="FluentResults.Extensions.AspNetCore" Version="0.1.0" />
+
+		<PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
+		<PackageReference Include="Serilog.Exceptions" Version="8.4.0" />
+		<PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+		<PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
+		<PackageReference Include="Serilog.Extensions.Hosting" Version="9.0.0" />
+		<PackageReference Include="Serilog.Sinks.Elasticsearch" Version="10.0.0" />
+
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Shared.Application\Shared.Application.csproj" />
+		<ProjectReference Include="..\Shared.AuthZ\Shared.AuthZ.csproj" />
+	</ItemGroup>
+</Project>

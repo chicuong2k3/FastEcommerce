@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+	<PropertyGroup>
+		<TargetFramework>net9.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UserSecretsId>67c63d21-cb80-4648-9742-e9aa480f0e29</UserSecretsId>
+		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+		<DockerfileContext>..\..\..\..</DockerfileContext>
+		<DockerComposeProjectPath>..\..\..\..\docker-compose.dcproj</DockerComposeProjectPath>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
+
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.4">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\..\Shared\Shared.Api\Shared.Api.csproj" />
+		<ProjectReference Include="..\Catalog.Infrastructure\Catalog.Infrastructure.csproj" />
+		<ProjectReference Include="..\Catalog.Requests\Catalog.Requests.csproj" />
+	</ItemGroup>
+
+</Project>

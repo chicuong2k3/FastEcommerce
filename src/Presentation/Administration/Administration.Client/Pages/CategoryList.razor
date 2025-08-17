@@ -1,0 +1,225 @@
+@page "/admin/categories"
+
+@inject ICategoryService CategoryService
+@inject INotifService NotifService
+@inject DialogService DialogService
+
+<PageTitle>Quản lý danh mục</PageTitle>
+
+<RadzenCard Visible="true" Variant="Radzen.Variant.Filled">
+    <RadzenStack>
+        <RadzenButton Text="THÊM DANH MỤC" ButtonStyle="ButtonStyle.Primary" Size="Radzen.ButtonSize.Medium" Click="ShowCreateModal" Shade="Radzen.Shade.Default" Variant="Variant.Flat" />
+    </RadzenStack>
+</RadzenCard>
+
+<RadzenCard>
+    <RadzenDataGrid Data="@categories" TItem="CategoryReadModel" AllowSorting="true" AllowFiltering="true" AllowPaging="true" AllowVirtualization="true" AllowAlternatingRows="true" Density="Radzen.Density.Compact" GridLines="Radzen.DataGridGridLines.Default" Responsive="false" AllowCompositeDataCells="false" ShowCellDataAsTooltip="true" AllowRowSelectOnRowClick="false" IsLoading="false" EditMode="Radzen.DataGridEditMode.Single" PagerAlwaysVisible="false" PagerHorizontalAlign="Radzen.HorizontalAlign.Right" PageSize="5" PageSizeOptions="[5, 10, 50]" PagerPosition="Radzen.PagerPosition.Bottom" GotoFirstPageOnSort="true" PageSizeText="dòng mỗi trang" PageTitleFormat="Trang {0}" FilterMode="Radzen.FilterMode.Simple" FilterPopupRenderMode="Radzen.PopupRenderMode.Initial" FilterDelay="0" FilterCaseSensitivity="Radzen.FilterCaseSensitivity.CaseInsensitive">
+        <Columns>
+            <RadzenDataGridColumn TItem="CategoryReadModel" Property="Name" Title="Tên">
+                <Template Context="category">
+                    @(categoryHierarchyCache.TryGetValue(category.Id, out var hierarchy) ? hierarchy : "")
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="CategoryReadModel" Property="Slug" Title="Slug">
+                <Template Context="category">
+                    @category.Slug
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="CategoryReadModel" Property="MetaTitle" Title="Tiêu đề meta">
+                <Template Context="category">
+                    @category.MetaTitle
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="CategoryReadModel" Property="MetaKeywords" Title="Các từ khóa meta">
+                <Template Context="category">
+                    @category.MetaKeywords
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="CategoryReadModel" Title="Hành động" Sortable="false" Filterable="false">
+                <Template Context="category">
+                    <RadzenStack Orientation="Orientation.Horizontal" Gap="8px">
+                        <RadzenButton Text="Chỉnh sửa" ButtonStyle="ButtonStyle.Warning" Size="ButtonSize.Small" Variant="Variant.Flat" Click="@(() => ShowEditModal(category))" />
+                        <RadzenButton Text="Xóa" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Variant="Variant.Flat" Click="@(() => ShowDeleteModal(category))" />
+                    </RadzenStack>
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+        <EmptyTemplate>
+            <RadzenStack JustifyContent="JustifyContent.Center">
+                <RadzenText TextStyle="TextStyle.H6" TextAlign="TextAlign.Center">
+                    Chưa có danh mục nào
+                </RadzenText>
+            </RadzenStack>
+        </EmptyTemplate>
+    </RadzenDataGrid>
+</RadzenCard>
+
+@code {
+    private List<CategoryReadModel> categories = new();
+    private CreateUpdateCategoryRequest currentCategory = new();
+    private Guid selectedCategoryId;
+    private CategoryReadModel selectedForDeleteCategory = new();
+    private Dictionary<Guid, string> categoryHierarchyCache = new();
+
+    private async Task LoadCategoriesAsync()
+    {
+        var response = await CategoryService.GetCategoriesAsync(null);
+        if (response.ResponseMessage.IsSuccessStatusCode)
+        {
+            categories = response.GetContent();
+            foreach (var category in categories)
+            {
+                var hierarchy = await GetCategoryHierarchy(category);
+                categoryHierarchyCache[category.Id] = hierarchy;
+            }
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategoriesAsync();
+        await base.OnInitializedAsync();
+    }
+
+    private async Task<string> GetCategoryHierarchy(CategoryReadModel category)
+    {
+        StringBuilder stringBuilder = new();
+        stringBuilder.Append(category.Name);
+        while (category != null)
+        {
+            if (category.ParentCategoryId == null)
+            {
+                break;
+            }
+            var response = await CategoryService.GetCategoryAsync(category.ParentCategoryId.Value);
+            if (response.ResponseMessage.IsSuccessStatusCode)
+            {
+                stringBuilder.Insert(0, $"{response.GetContent().Name} > ");
+                category = response.GetContent();
+            }
+            else
+            {
+                break;
+            }
+        }
+        return stringBuilder.ToString();
+    }
+
+    private async Task ShowCreateModal()
+    {
+        currentCategory = new();
+        var ok = await DialogService.OpenAsync<CreateEditCategoryModal>("Thêm danh mục",
+            new Dictionary<string, object>
+            {
+                { "Category", currentCategory },
+                { "Categories", categories.ToList() }
+            });
+
+        if (ok == true)
+        {
+            await HandleCreate();
+        }
+    }
+
+    private async Task ShowEditModal(CategoryReadModel category)
+    {
+        var parentCategory = categories.FirstOrDefault(c => c.Id == category.ParentCategoryId);
+        selectedCategoryId = category.Id;
+        currentCategory = new CreateUpdateCategoryRequest
+        {
+            Name = category.Name,
+            ParentCategoryId = parentCategory?.Id,
+            Description = category.Description,
+            Slug = category.Slug,
+            PictureUrl = category.PictureUrl,
+            MetaTitle = category.MetaTitle,
+            MetaDescription = category.MetaDescription,
+            MetaKeywords = category.MetaKeywords
+        };
+
+        var ok = await DialogService.OpenAsync<CreateEditCategoryModal>("Chỉnh sửa danh mục",
+            new Dictionary<string, object>
+            {
+                { "Category", currentCategory },
+                { "Categories", categories.Where(c => c.Id != selectedCategoryId).ToList() }
+            });
+
+        if (ok == true)
+        {
+            await HandleUpdate();
+        }
+    }
+
+    private async Task ShowDeleteModal(CategoryReadModel category)
+    {
+        selectedForDeleteCategory = category;
+        var ok = await DialogService.OpenAsync<DeleteConfirmationModal>("Xoá danh mục",
+            new Dictionary<string, object>
+            {
+                { "ChildContent", GetDeleteDialogContent() }
+            });
+
+        if (ok == true)
+        {
+            await HandleDelete();
+        }
+    }
+
+    private RenderFragment GetDeleteDialogContent()
+    {
+        return __builder =>
+        {
+            <RadzenText>Bạn có chắc chắn muốn xóa danh mục '@selectedForDeleteCategory.Name' không?</RadzenText>
+        };
+    }
+
+    private async Task HandleCreate()
+    {
+        var response = await CategoryService.CreateCategoryAsync(currentCategory);
+        if (response.ResponseMessage.IsSuccessStatusCode)
+        {
+            categories = [.. categories, response.GetContent()];
+            categoryHierarchyCache[response.GetContent().Id] = await GetCategoryHierarchy(response.GetContent());
+            NotifService.Success("Thêm thành công");
+        }
+        else
+        {
+            NotifService.Error("Thêm thất bại");
+        }
+    }
+
+    private async Task HandleUpdate()
+    {
+        var response = await CategoryService.UpdateCategoryAsync(selectedCategoryId, currentCategory);
+        if (response.ResponseMessage.IsSuccessStatusCode)
+        {
+            var index = categories.FindIndex(c => c.Id == selectedCategoryId);
+            var updatedCategories = new List<CategoryReadModel>(categories.Count);
+            for (int i = 0; i < categories.Count; i++)
+            {
+                updatedCategories.Add(i == index ? response.GetContent() : categories[i]);
+            }
+
+            categories = updatedCategories;
+            NotifService.Success("Chỉnh sửa thành công");
+        }
+        else
+        {
+            NotifService.Error("Chỉnh sửa thất bại");
+        }
+    }
+
+    private async Task HandleDelete()
+    {
+        var response = await CategoryService.DeleteCategoryAsync(selectedForDeleteCategory.Id);
+        if (response.ResponseMessage.IsSuccessStatusCode)
+        {
+            categories = categories.Where(c => c.Id != selectedForDeleteCategory.Id).ToList();
+            NotifService.Success("Xóa thành công");
+        }
+        else
+        {
+            NotifService.Error("Xóa thất bại");
+        }
+    }
+}

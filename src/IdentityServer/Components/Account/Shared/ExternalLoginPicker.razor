@@ -1,0 +1,59 @@
+﻿@using IdentityServer8.Services
+@using IdentityServer8.Stores
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Identity
+@using IdentityServer.Data
+
+@inject IIdentityServerInteractionService Interaction
+@inject IAuthenticationSchemeProvider SchemeProvider
+@inject IClientStore ClientStore
+@inject NavigationManager NavigationManager
+@inject IHttpClientFactory HttpClientFactory
+
+@if (externalLogins.Count > 0)
+{
+
+    <RadzenStack Gap="4px">
+        @foreach (var provider in externalLogins)
+        {
+            <RadzenButton Text="@($"Đăng nhập với {provider.DisplayName}")"
+                          ButtonStyle="ButtonStyle.Secondary"
+                          Size="ButtonSize.Medium"
+                          Variant="Variant.Flat" Style="width: 100%"
+                          Click="@(() => ExternalLogin(provider.Name))" />
+        }
+    </RadzenStack>
+}
+
+@code {
+    private List<ExternalLoginProvider> externalLogins = [];
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var httpClient = HttpClientFactory.CreateClient("IdentityServerClient");
+        var result = await httpClient.GetFromJsonAsync<List<ExternalLoginProvider>>($"/api/externallogins?returnUrl={Uri.EscapeDataString(ReturnUrl ?? "/")}");
+        externalLogins = result ?? [];
+
+    }
+
+    private void ExternalLogin(string provider)
+    {
+        NavigationManager.NavigateTo(NavigationManager.GetUriWithQueryParameters(
+            NavigationManager.ToAbsoluteUri("Account/PerformExternalLogin").AbsoluteUri,
+                new Dictionary<string, object?>()
+                {
+                    ["provider"] = provider,
+                    ["returnUrl"] = ReturnUrl
+                }), forceLoad: true);
+    }
+
+    public class ExternalLoginProvider
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? DisplayName { get; set; }
+    }
+}

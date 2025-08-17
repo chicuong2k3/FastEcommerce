@@ -1,0 +1,22 @@
+﻿<RadzenCard>
+    <RadzenUpload id="uploadWithDragAndDrop"
+                  ChooseText="@ChooseText" Disabled="@Disabled" Accept="@Accept"
+                  Auto="false" Multiple="@Multiple" Url="upload/multiple"
+                  InputAttributes="@(new Dictionary<string,object>(){ { "aria-label", "select file" }})"
+                  Style="width: 100%" />
+</RadzenCard>
+
+@code {
+    [Parameter]
+    public bool Multiple { get; set; } = true;
+
+    [Parameter]
+    public bool Disabled { get; set; } = false;
+
+    [Parameter]
+    public string Accept { get; set; } = string.Empty;
+
+    [Parameter]
+    public string ChooseText { get; set; } = "Drag and drop here or click to choose files";
+
+}

@@ -1,0 +1,89 @@
+﻿@page "/Account/LoginWith2fa"
+
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Identity
+
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+
+<PageTitle>Xác thực hai bước</PageTitle>
+
+<RadzenRow AlignItems="AlignItems.Center" Style="height: 100vh">
+    <RadzenColumn Size="10" Offset="1" SizeSM="6" OffsetSM="3" SizeMD="4" OffsetMD="4">
+        <RadzenCard Variant="Variant.Outlined">
+            <RadzenText TextStyle="TextStyle.H5" TextAlign="TextAlign.Center">
+                XÁC THỰC HAI BƯỚC
+            </RadzenText>
+            <RadzenStack JustifyContent="JustifyContent.Center">
+                @if (!string.IsNullOrEmpty(ErrorMessage))
+                {
+                    <RadzenAlert AlertStyle="AlertStyle.Danger" Variant="Variant.Flat" Shade="Shade.Lighter" AllowClose="false">
+                        @ErrorMessage
+                    </RadzenAlert>
+                }
+
+                <RadzenTemplateForm TItem="TFALoginInput" Data="@Input" Submit="@OnValidSubmitAsync" Action="/Account/CompleteLoginWith2fa" Method="post" id="loginWith2faForm">
+
+                    <RadzenStack Gap="12px">
+                        <RadzenStack Orientation="Orientation.Vertical" Gap="4px">
+                            <RadzenLabel Text="Mã xác thực" />
+                            <RadzenSecurityCode Name="TwoFactorCode" @bind-Value="@Input.TwoFactorCode" Type="SecurityCodeType.Numeric" Count="6" Gap="1rem" />
+                        </RadzenStack>
+
+
+                        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+                                <RadzenCheckBox @bind-Value="@Input.RememberMachine" Name="RememberMachine" />
+                                <RadzenLabel Text="Nhớ thiết bị này" Component="RememberMachine" />
+                            </RadzenStack>
+                        </RadzenStack>
+
+                        <RadzenCheckBox @bind-Value="@RememberMe" Name="RememberMe" Style="display: none" />
+                        <input type="hidden" name="returnUrl" value="@ReturnUrl" />
+
+                        <RadzenButton Text="XÁC THỰC" ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Medium" Variant="Variant.Flat" Style="width: 100%" />
+                    </RadzenStack>
+
+                </RadzenTemplateForm>
+
+
+                <RadzenStack Orientation="Orientation.Vertical" JustifyContent="JustifyContent.Center" AlignItems="AlignItems.Center" Gap="0">
+                    <RadzenText TextStyle="TextStyle.Subtitle2">
+                        Bạn không thể truy cập vào authenticator của bạn?
+                    </RadzenText>
+                    <RadzenText TextStyle="TextStyle.Subtitle2">
+                        <TextButton Text="Đăng nhập với mã khôi phục" Path="@($"/Account/LoginWithRecoveryCode?ReturnUrl={Uri.EscapeDataString(ReturnUrl ?? "/")}&rememberMe={RememberMe}")" />
+                    </RadzenText>
+                </RadzenStack>
+            </RadzenStack>
+
+
+        </RadzenCard>
+    </RadzenColumn>
+</RadzenRow>
+
+@code {
+    [SupplyParameterFromQuery]
+    private string? ErrorMessage { get; set; }
+
+    private TFALoginInput Input { get; set; } = new();
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    [SupplyParameterFromQuery]
+    private bool RememberMe { get; set; }
+
+    private async Task OnValidSubmitAsync()
+    {
+        await JS.InvokeVoidAsync("submitForm", "loginWith2faForm");
+    }
+
+    public sealed class TFALoginInput
+    {
+        public string? TwoFactorCode { get; set; }
+        public bool RememberMachine { get; set; }
+    }
+}

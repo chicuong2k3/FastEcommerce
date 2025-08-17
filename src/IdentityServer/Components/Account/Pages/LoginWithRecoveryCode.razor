@@ -1,0 +1,72 @@
+﻿@page "/Account/LoginWithRecoveryCode"
+
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Identity
+@using IdentityServer.Data
+
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+@inject ILogger<LoginWithRecoveryCode> Logger
+@inject IJSRuntime JS
+
+<PageTitle>Xác thực mã khôi phục</PageTitle>
+
+<RadzenRow AlignItems="AlignItems.Center" Style="height: 100vh">
+    <RadzenColumn Size="10" Offset="1" SizeMD="6" OffsetMD="3">
+        <RadzenCard Variant="Variant.Outlined">
+            <RadzenText TextStyle="TextStyle.H5" TextAlign="TextAlign.Center">
+                XÁC THỰC VỚI MÃ KHÔI PHỤC
+            </RadzenText>
+            <RadzenStack JustifyContent="JustifyContent.Center">
+                @if (!string.IsNullOrEmpty(ErrorMessage))
+                {
+                    <RadzenAlert AlertStyle="AlertStyle.Danger" Variant="Variant.Flat" Shade="Shade.Lighter" AllowClose="false">
+                        @ErrorMessage
+                    </RadzenAlert>
+                }
+
+                <RadzenTemplateForm TItem="RecoveryLoginInput" Data="@Input" Submit="@OnValidSubmitAsync" Action="/Account/CompleteLoginWithRecoveryCode" Method="post" id="loginWithRecoveryCodeForm">
+                    <RadzenStack Gap="12px">
+                        <RadzenStack Orientation="Orientation.Vertical" Gap="4px">
+                            <RadzenLabel Text="Mã xác thực" />
+                            <RadzenSecurityCode Name="RecoveryCode" @bind-Value="@Input.RecoveryCode" Type="SecurityCodeType.Numeric" Count="6" Gap="1rem" />
+                        </RadzenStack>
+
+                        <RadzenCheckBox @bind-Value="@RememberMe" Name="RememberMe" Style="display: none" />
+                        <input type="hidden" name="returnUrl" value="@ReturnUrl" />
+
+                        <RadzenButton Text="XÁC THỰC" ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Medium" Variant="Variant.Flat" Style="width: 100%" />
+                    </RadzenStack>
+
+                </RadzenTemplateForm>
+            </RadzenStack>
+
+        </RadzenCard>
+    </RadzenColumn>
+</RadzenRow>
+
+@code {
+    [SupplyParameterFromQuery]
+    private string? ErrorMessage { get; set; }
+
+    [SupplyParameterFromForm]
+    private RecoveryLoginInput Input { get; set; } = new();
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    [SupplyParameterFromQuery]
+    private bool RememberMe { get; set; }
+
+
+    private async Task OnValidSubmitAsync()
+    {
+        await JS.InvokeVoidAsync("submitForm", "loginWithRecoveryCodeForm");
+    }
+
+    public sealed class RecoveryLoginInput
+    {
+        public string RecoveryCode { get; set; } = "";
+    }
+
+}
