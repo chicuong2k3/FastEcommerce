@@ -245,10 +245,15 @@
                     SalePrice = commonVariant.SalePrice,
                     SaleFrom = commonVariant.SaleFrom,
                     SaleTo = commonVariant.SaleTo,
-                    ProductAttributeValuePairs = attributeValues.Select((value, index) => new ProductAttributeValuePair
+                    ProductAttributeValuePairs = attributeValues.Select(v =>
                     {
-                        ProductAttributeId = attributes[index].Id,
-                        ProductAttributeValue = value
+                        var attributeId = combo.First(kv => kv.Value == v).Key;
+
+                        return new ProductAttributeValuePair
+                        {
+                            ProductAttributeId = attributeId,
+                            ProductAttributeValue = v
+                        };
                     }).ToList()
                 };
             generatedVariants.Add(variant);

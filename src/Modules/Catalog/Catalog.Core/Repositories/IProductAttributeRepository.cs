@@ -7,4 +7,5 @@ public interface IProductAttributeRepository : IRepositoryBase<ProductAttribute,
     Task<List<ProductAttribute>> GetByIdsAsync(List<Guid> ids, CancellationToken cancellationToken = default);
     Task<List<ProductAttribute>> GetAttributesAsync(CancellationToken cancellationToken = default);
     Task<List<ProductAttributeValue>> GetValuesAsync(Guid productAttributeId, CancellationToken cancellationToken = default);
+    Task<ProductAttributeValue?> GetValueAsync(Guid productAttributeId, string value, CancellationToken cancellationToken = default);
 }

@@ -40,6 +40,16 @@ internal class ProductAttributeRepository : RepositoryBase<ProductAttribute, Gui
             .FirstOrDefaultAsync(a => a.Name.ToLower() == name.ToLower(), cancellationToken);
     }
 
+    public async Task<ProductAttributeValue?> GetValueAsync(Guid productAttributeId, string value, CancellationToken cancellationToken = default)
+    {
+        var result = await _dbContext.ProductAttributeValues
+            .Where(x => x.AttributeId == productAttributeId && x.Value.ToLower() == value.ToLower())
+            .Include(x => x.Attribute)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return result;
+    }
+
     public async Task<List<ProductAttributeValue>> GetValuesAsync(Guid productAttributeId, CancellationToken cancellationToken = default)
     {
         return await _dbContext.ProductAttributeValues

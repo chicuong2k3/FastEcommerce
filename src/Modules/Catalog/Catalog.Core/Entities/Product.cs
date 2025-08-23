@@ -1,4 +1,7 @@
-﻿namespace Catalog.Core.Entities;
+﻿using Microsoft.VisualBasic.FileIO;
+using System.Text.Json;
+
+namespace Catalog.Core.Entities;
 
 public sealed class Product : AggregateRoot<Guid>
 {
@@ -77,7 +80,7 @@ public sealed class Product : AggregateRoot<Guid>
         errors.AddRange(ValidateProductTypeRules(isSimple, sku, basePrice, salePrice));
         errors.AddRange(ValidatePriceRules(basePrice, salePrice, saleEffectiveRange));
 
-        var attrValidation = await ValidateAndEnsureProductAttributesAsync(productAttributeValuePairs, productAttributeRepository, isVariant: false);
+        var attrValidation = await ValidateProductAttributesAsync(productAttributeValuePairs, productAttributeRepository, isVariant: false);
         if (attrValidation.IsFailed)
             errors.AddRange(attrValidation.Errors);
 
@@ -128,7 +131,7 @@ public sealed class Product : AggregateRoot<Guid>
         var errors = new List<IError>();
         errors.AddRange(ValidatePriceRules(basePrice, salePrice, saleEffectiveRange));
 
-        var attrValidation = await ValidateAndEnsureProductAttributesAsync(productAttributeValuePairs, productAttributeRepository, isVariant: true);
+        var attrValidation = await ValidateProductAttributesAsync(productAttributeValuePairs, productAttributeRepository, isVariant: true);
         if (attrValidation.IsFailed)
             errors.AddRange(attrValidation.Errors);
 
@@ -143,16 +146,15 @@ public sealed class Product : AggregateRoot<Guid>
 
         foreach (var pair in productAttributeValuePairs)
         {
-            var productAttributeValues = await productAttributeRepository.GetValuesAsync(pair.ProductAttributeId);
-            var attributeValue = productAttributeValues.FirstOrDefault(x => x.Value.Equals(pair.ProductAttributeValue, StringComparison.OrdinalIgnoreCase));
-            if (attributeValue == null)
-            {
-                attributeValue = new ProductAttributeValue(pair.ProductAttributeId, pair.ProductAttributeValue);
-            }
+            var productAttributeValue = await productAttributeRepository.GetValueAsync(pair.ProductAttributeId, pair.ProductAttributeValue);
 
-            var addAttrResult = variant.AddAttribute(attributeValue);
-            if (addAttrResult.IsFailed)
-                return Result.Fail(addAttrResult.Errors);
+            if (productAttributeValue != null)
+            {
+                var addAttrResult = variant.AddAttribute(productAttributeValue);
+                if (addAttrResult.IsFailed)
+                    return Result.Fail(addAttrResult.Errors);
+
+            }
 
         }
 
@@ -195,7 +197,7 @@ public sealed class Product : AggregateRoot<Guid>
         errors.AddRange(ValidateProductTypeRules(IsSimple, sku, basePrice, salePrice));
         errors.AddRange(ValidatePriceRules(basePrice, salePrice, saleEffectiveRange));
 
-        var attrValidation = await ValidateAndEnsureProductAttributesAsync(productAttributeValuePairs, productAttributeRepository, isVariant: false);
+        var attrValidation = await ValidateProductAttributesAsync(productAttributeValuePairs, productAttributeRepository, isVariant: false);
         if (attrValidation.IsFailed)
             errors.AddRange(attrValidation.Errors);
 
@@ -347,7 +349,7 @@ public sealed class Product : AggregateRoot<Guid>
             yield return new Error("Sale price cannot be null if sale from/to is set");
     }
 
-    private static async Task<Result> ValidateAndEnsureProductAttributesAsync(
+    private static async Task<Result> ValidateProductAttributesAsync(
         IEnumerable<(Guid ProductAttributeId, string ProductAttributeValue)> pairs,
         IProductAttributeRepository repo,
         bool isVariant)
